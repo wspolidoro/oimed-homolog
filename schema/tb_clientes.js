@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 const { sequelize, sandbox } = require('../db');
-
+const Franqueado = require('./tb_franqueado');
 
 const Clientes = sequelize.define('oi_clientes', {
     id: {
@@ -272,8 +272,20 @@ const Clientes = sequelize.define('oi_clientes', {
         type: Sequelize.DATE,
         allowNull: true,
         defaultValue: Sequelize.NOW
+    },
+
+    reminderSent: {
+        type: Sequelize.BOOLEAN,
+        allowNull: true,
+        defaultValue: Sequelize.NOW
     }
 
+});
+
+Clientes.belongsTo(Franqueado, {
+    constraints: true,
+    foreignKey: 'id_franqueado',
+    targetKey: 'id'
 });
 
 module.exports = Clientes;

@@ -19,6 +19,7 @@ const Rapidoc = require('../schema/tb_rapidoc');
 
 //controllers
 const cadastroNewForm = require('../controllers/cadastroClientes/cadastroNewForm');
+const paymentReminder = require('../controllers/telemedicinaActions/notifications.js');
 const { webhookActivate } = require('../controllers/auto_ativacao/webhook.js');
 
 
@@ -1142,7 +1143,7 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
         "zipCode": cliente[0].zip_code,
         "address": "rua do teste, 01",//cliente[0].address,
         "city": cliente[0].city,
-        "state": cliente[0].state.substr(cliente[0].state.length-3, 2),
+        "state": cliente[0].state.length <=2 ? cliente[0].state : cliente[0].state.substr(cliente[0].state.length-3, 2),
         "paymentType": cliente[0].paymentType,
         "serviceType": cliente[0].serviceType,
         "holder": "",
@@ -1176,7 +1177,7 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
         "zipCode": dataArr[0].zipCode1,
         "address": dataArr[0].address1,
         "city": dataArr[0].city1,
-        "state": dataArr[0].state1.substr(cliente[0].state1.length-3, 2),
+        "state": dataArr[0].state1.length <= 2 ? dataArr[0].state1 : dataArr[0].state1.substr(dataArr[0].state1.length-3, 2),
         "holder": cliente[0].nu_documento
       }
 
@@ -1194,7 +1195,7 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
         "zipCode": dataArr[1].zipCode2,
         "address": dataArr[1].address2,
         "city": dataArr[1].city2,
-        "state": dataArr[1].state2.substr(cliente[0].state2.length-3, 2),
+        "state": dataArr[0].state2.length <= 2 ? dataArr[0].state2 : dataArr[0].state2.substr(dataArr[0].state2.length-3, 2),
         "holder": cliente[0].nu_documento
       }
 
@@ -1212,7 +1213,7 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
         "zipCode": dataArr[2].zipCode3,
         "address": dataArr[2].address3,
         "city": dataArr[2].city3,
-        "state": dataArr[2].state3.substr(cliente[0].state3.length-3, 2),
+        "state": dataArr[0].state3.length <= 2 ? dataArr[0].state3 : dataArr[0].state3.substr(dataArr[0].state3.length-3, 2),
         "holder": cliente[0].nu_documento
       };
 
@@ -1529,6 +1530,9 @@ async function countClients() {
     
 }
 
+//Payment reminder
+router.get('/payment/reminder/7', paymentReminder.paymentReminder7);
+router.get('/payment/reminder/1', paymentReminder.paymentReminder1);
 
 
 module.exports = router;

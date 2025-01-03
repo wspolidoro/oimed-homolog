@@ -110,9 +110,26 @@ async function mailerNewCadastro(data, emaildestino) {
 
 };
 
+async function mailerPaymentReminder(ccEmails, from, to, subject, text) {
+
+    //variaveis do corpo de envio do email com variação de idiomas para o novo aluno
+
+    const mailSentPT = await transporter.sendMail({
+       from,
+       to,
+       cc: ccEmails.join(', '),  // Junta os emails para CC
+       subject,
+       text
+    });
+    return mailSentPT
+    //---------------------------------------------------------------------------------->
+
+};
+
 module.exports = {
     sendMailError,
-    mailerNewCadastro
+    mailerNewCadastro,
+    mailerPaymentReminder
 };
 
 
