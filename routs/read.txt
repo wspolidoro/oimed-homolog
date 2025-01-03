@@ -1,0 +1,8 @@
+
+Podemos definir algo como:
+
+Central principal : rapidoc
+Central parceiros : Oimed
+Painel vidas: painel do white label
+
+------------------------------------------------>

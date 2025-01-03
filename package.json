@@ -1,0 +1,33 @@
+{
+  "name": "mysql",
+  "version": "1.0.0",
+  "description": "inicio do projeto",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js"
+  },
+  "author": "kledisom oliveira",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.4.0",
+    "body-parser": "^1.20.1",
+    "cors": "^2.8.5",
+    "ejs": "^3.1.8",
+    "express": "^4.18.2",
+    "fs": "^0.0.1-security",
+    "googleapis": "^108.0.0",
+    "html-pdf": "^3.0.1",
+    "jsonwebtoken": "^9.0.0",
+    "jspdf": "^2.5.1",
+    "mysql2": "^2.3.3",
+    "nodemailer": "^6.8.0",
+    "nodemon": "^2.0.20",
+    "path": "^0.12.7",
+    "sequelize": "^6.24.0",
+    "swagger-ui-express": "^5.0.0"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^8.0.2"
+  }
+}

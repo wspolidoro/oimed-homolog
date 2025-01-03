@@ -1,0 +1,95 @@
+[LOG] 2024-08-23T10:56:37.935Z: Isso será registrado no arquivo de log.
+[ERROR] 2024-08-23T10:56:37.935Z: Isso será registrado como um erro no arquivo de log.
+[LOG] 2024-08-23T10:56:43.860Z: Listening! in port: 3035
+[LOG] 2024-08-23T10:57:00.048Z: Time: 
+[LOG] 2024-08-23T10:57:00.048Z: [object Object]
+[LOG] 2024-08-23T10:57:00.048Z: URL solicitada: apioimed.z4you.com.br - /franqueado/clientes/list
+[LOG] 2024-08-23T10:57:00.789Z: Executing (default): SELECT `id`, `nm_cliente`, `nu_documento`, `birthday`, `telefone`, `email`, `zip_code`, `address`, `city`, `state`, `paymentType`, `serviceType`, `dt_venda`, `situacao`, `nu_parcelas`, `vl_venda`, `dt_cobranca`, `dt_vencimento`, `dt_pagamento`, `link`, `beneficiarios`, `id_franqueado`, `cpf_titular`, `createdAt`, `updatedAt` FROM `oi_clientes` AS `oi_clientes` WHERE `oi_clientes`.`id_franqueado` = '39';
+[LOG] 2024-08-23T10:59:39.785Z: Isso será registrado no arquivo de log.
+[ERROR] 2024-08-23T10:59:39.785Z: Isso será registrado como um erro no arquivo de log.
+[LOG] 2024-08-23T10:59:39.785Z: {
+  "key": "value",
+  "anotherKey": 123
+}
+[LOG] 2024-08-23T10:59:46.088Z: Listening! in port: 3035
+[LOG] 2024-08-23T10:59:58.418Z: Time: 
+[LOG] 2024-08-23T10:59:58.420Z: {
+  "id": "39",
+  "perfil": "guest"
+}
+[LOG] 2024-08-23T10:59:58.420Z: URL solicitada: apioimed.z4you.com.br - /franqueado/clientes/list
+[LOG] 2024-08-23T11:00:00.021Z: Executing (default): SELECT `id`, `nm_cliente`, `nu_documento`, `birthday`, `telefone`, `email`, `zip_code`, `address`, `city`, `state`, `paymentType`, `serviceType`, `dt_venda`, `situacao`, `nu_parcelas`, `vl_venda`, `dt_cobranca`, `dt_vencimento`, `dt_pagamento`, `link`, `beneficiarios`, `id_franqueado`, `cpf_titular`, `createdAt`, `updatedAt` FROM `oi_clientes` AS `oi_clientes` WHERE `oi_clientes`.`id_franqueado` = '39';
+[LOG] 2024-08-23T11:00:15.785Z: Time: 
+[LOG] 2024-08-23T11:00:15.791Z: {}
+[LOG] 2024-08-23T11:00:15.792Z: URL solicitada: apioimed.z4you.com.br - /beneficiaries/create/98802321787
+[LOG] 2024-08-23T11:00:16.999Z: Executing (default): SELECT `id`, `nm_cliente`, `nu_documento`, `birthday`, `telefone`, `email`, `zip_code`, `address`, `city`, `state`, `paymentType`, `serviceType`, `dt_venda`, `situacao`, `nu_parcelas`, `vl_venda`, `dt_cobranca`, `dt_vencimento`, `dt_pagamento`, `link`, `beneficiarios`, `id_franqueado`, `cpf_titular`, `createdAt`, `updatedAt` FROM `oi_clientes` AS `oi_clientes` WHERE `oi_clientes`.`nu_documento` = '98802321787';
+[LOG] 2024-08-23T11:00:17.065Z: 1/19-/1-15
+[LOG] 2024-08-23T11:00:17.065Z: {}
+[LOG] 2024-08-23T11:00:17.065Z: origewm: 
+[LOG] 2024-08-23T11:02:18.699Z: Isso será registrado no arquivo de log.
+[ERROR] 2024-08-23T11:02:18.699Z: Isso será registrado como um erro no arquivo de log.
+[LOG] 2024-08-23T11:02:18.699Z: {
+  "key": "value",
+  "anotherKey": 123
+}
+[LOG] 2024-08-23T11:02:22.639Z: Listening! in port: 3035
+[LOG] 2024-08-23T11:02:23.937Z: Time: 
+[LOG] 2024-08-23T11:02:23.938Z: {
+  "nm_cliente": "FRANCIELLI GODIEMSKI BARBARO VIERIA",
+  "nu_documento": "34234234242",
+  "birthday": "12/12/2012",
+  "email": "6hypz3frls6215v@marketplace.amazon.com.br",
+  "telefone": "44234234434",
+  "zip_code": "38.410-665",
+  "address": "Avenida Vereador Carlito Cordeiro",
+  "city": "Uberlândia",
+  "state": "AL",
+  "paymentType": "S",
+  "serviceType": "G",
+  "link": "https://www.google.com",
+  "beneficiarios": "[{\"nm_cliente1\":null,\"nu_documento1\":null,\"birthday1\":null,\"email1\":null,\"telefone1\":null,\"zipCode1\":null,\"address1\":null,\"city1\":null,\"state1\":null},{\"nm_cliente2\":null,\"nu_documento2\":null,\"birthday2\":null,\"email2\":null,\"telefone2\":null,\"zipCode2\":null,\"address2\":null,\"city2\":null,\"state2\":null},{\"nm_cliente3\":null,\"nu_documento3\":null,\"birthday3\":null,\"email3\":null,\"telefone3\":null,\"zipCode3\":null,\"address3\":null,\"city3\":null,\"state3\":null}]",
+  "id_franqueado": "39"
+}
+[LOG] 2024-08-23T11:02:23.938Z: URL solicitada: apioimed.z4you.com.br - /franqueado/clientes
+[LOG] 2024-08-23T11:02:25.484Z: Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'oi_franqueados' AND TABLE_SCHEMA = 'oimedint'
+[LOG] 2024-08-23T11:02:25.553Z: Executing (default): SHOW INDEX FROM `oi_franqueados`
+[LOG] 2024-08-23T11:02:25.626Z: Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'oi_clientes' AND TABLE_SCHEMA = 'oimedint'
+[LOG] 2024-08-23T11:02:25.693Z: Executing (default): SHOW INDEX FROM `oi_clientes`
+[LOG] 2024-08-23T11:02:25.761Z: Executing (default): SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME = 'oi_rapidocs' AND TABLE_SCHEMA = 'oimedint'
+[LOG] 2024-08-23T11:02:25.830Z: Executing (default): SHOW INDEX FROM `oi_rapidocs`
+[LOG] 2024-08-23T11:02:25.899Z: {
+  "nm_cliente": "FRANCIELLI GODIEMSKI BARBARO VIERIA",
+  "nu_documento": "34234234242",
+  "birthday": "12/12/2012",
+  "email": "6hypz3frls6215v@marketplace.amazon.com.br",
+  "telefone": "44234234434",
+  "zip_code": "38.410-665",
+  "address": "Avenida Vereador Carlito Cordeiro",
+  "city": "Uberlândia",
+  "state": "AL",
+  "paymentType": "S",
+  "serviceType": "G",
+  "link": "https://www.google.com",
+  "beneficiarios": "[{\"nm_cliente1\":null,\"nu_documento1\":null,\"birthday1\":null,\"email1\":null,\"telefone1\":null,\"zipCode1\":null,\"address1\":null,\"city1\":null,\"state1\":null},{\"nm_cliente2\":null,\"nu_documento2\":null,\"birthday2\":null,\"email2\":null,\"telefone2\":null,\"zipCode2\":null,\"address2\":null,\"city2\":null,\"state2\":null},{\"nm_cliente3\":null,\"nu_documento3\":null,\"birthday3\":null,\"email3\":null,\"telefone3\":null,\"zipCode3\":null,\"address3\":null,\"city3\":null,\"state3\":null}]",
+  "id_franqueado": "39"
+}
+[LOG] 2024-08-23T11:02:25.908Z: Executing (default): INSERT INTO `oi_clientes` (`id`,`nm_cliente`,`nu_documento`,`birthday`,`telefone`,`email`,`zip_code`,`address`,`city`,`state`,`paymentType`,`serviceType`,`dt_venda`,`situacao`,`nu_parcelas`,`vl_venda`,`dt_cobranca`,`dt_vencimento`,`dt_pagamento`,`link`,`beneficiarios`,`id_franqueado`,`cpf_titular`,`createdAt`,`updatedAt`) VALUES (DEFAULT,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+[LOG] 2024-08-23T11:02:29.928Z: Time: 
+[LOG] 2024-08-23T11:02:29.929Z: {
+  "id": "39",
+  "perfil": "guest"
+}
+[LOG] 2024-08-23T11:02:29.929Z: URL solicitada: apioimed.z4you.com.br - /franqueado/clientes/list
+[LOG] 2024-08-23T11:02:29.934Z: Executing (default): SELECT `id`, `nm_cliente`, `nu_documento`, `birthday`, `telefone`, `email`, `zip_code`, `address`, `city`, `state`, `paymentType`, `serviceType`, `dt_venda`, `situacao`, `nu_parcelas`, `vl_venda`, `dt_cobranca`, `dt_vencimento`, `dt_pagamento`, `link`, `beneficiarios`, `id_franqueado`, `cpf_titular`, `createdAt`, `updatedAt` FROM `oi_clientes` AS `oi_clientes` WHERE `oi_clientes`.`id_franqueado` = '39';
+[LOG] 2024-08-23T11:02:32.672Z: Time: 
+[LOG] 2024-08-23T11:02:32.673Z: {}
+[LOG] 2024-08-23T11:02:32.673Z: URL solicitada: apioimed.z4you.com.br - /beneficiaries/create/34234234242
+[LOG] 2024-08-23T11:02:32.678Z: Executing (default): SELECT `id`, `nm_cliente`, `nu_documento`, `birthday`, `telefone`, `email`, `zip_code`, `address`, `city`, `state`, `paymentType`, `serviceType`, `dt_venda`, `situacao`, `nu_parcelas`, `vl_venda`, `dt_cobranca`, `dt_vencimento`, `dt_pagamento`, `link`, `beneficiarios`, `id_franqueado`, `cpf_titular`, `createdAt`, `updatedAt` FROM `oi_clientes` AS `oi_clientes` WHERE `oi_clientes`.`nu_documento` = '34234234242';
+[LOG] 2024-08-23T11:02:32.742Z: 2/20-/1-12
+[LOG] 2024-08-23T11:02:32.742Z: {}
+[LOG] 2024-08-23T11:02:32.742Z: origewm: 
+[LOG] 2024-08-23T11:02:34.101Z: resposta: 
+[LOG] 2024-08-23T11:02:34.102Z: erro ao criar: 
+[LOG] 2024-08-23T11:02:34.233Z: Time: 
+[LOG] 2024-08-23T11:02:34.233Z: {}
+[LOG] 2024-08-23T11:02:34.233Z: URL solicitada: apioimed.z4you.com.br - /consulta/rapidoc/34234234242

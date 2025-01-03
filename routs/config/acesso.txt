@@ -1,0 +1,7 @@
+email = signatureprojectjp@gmail.com
+password = signature123456
+data de nascimento = 15 de outubro de 2000
+numero cadastrado = 82 988767988
+senha de app para dispositivo = nxzuxoyskwbmkizv
+senha de app para dispositivo email principal da empresa = atwnzuctwzepcabb
+senha do github = Signature123456

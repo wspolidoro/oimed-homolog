@@ -1,0 +1,334 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "OIMED",
+        "description": "Bem-vindo à documentação da API OIMED, uma plataforma que fornece acesso a recursos e serviços essenciais para serviços de telemedicina. Esta documentação foi elaborada para orientar desenvolvedores, facilitando a integração e o entendimento completo das capacidades oferecidas pela nossa API.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://apioimed.z4you.com.br/sandbox",
+            "description": "Development Server"
+        },
+        {
+             "url": "https://apioimed.z4you.com.br/api",
+            "description": "Production Server"
+        }
+    ],
+    "basePath": "/",
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    },
+    "paths": {
+             "/auth?login={login}": {
+            "post": {
+                "tags": [
+                    "Autenticação"
+                ],
+                "summary": "Rota para obter token de acesso, Atenção! para obter token de login adicione o valor true a queryParam Login",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "api_key": {
+                                        "type": "string",
+                                        "description": "Chave da API"
+                                    },
+                                    "secret_key": {
+                                        "type": "string",
+                                        "description": "Chave secreta"
+                                    }
+                                },
+                                "required": [
+                                    "api_key",
+                                    "secret_key"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "login",
+                        "type": "boolean",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "obter token de login",
+                            "default": false
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Bad request"
+                    },
+                    "404": {
+                        "description": "Error: Not Found"
+                    },
+                    "500": {
+                        "description": "Erro interno"
+                    }
+                }
+            }
+        },
+        "/consulta/oimed/{cpf}": {
+            "get": {
+                "tags": [
+                    "Consulta"
+                ],
+                "summary": "Rota para consultar clientes ativos",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "cpf",
+                        "type": "string",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "cpf do cliente"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Bad request"
+                    },
+                    "404": {
+                        "description": "Error: Not Found"
+                    },
+                    "500": {
+                        "description": "Erro interno"
+                    }
+                }
+            }
+        },
+        "/beneficiaries/activate/{cpf}": {
+            "post": {
+                "tags": [
+                    "Ações"
+                ],
+                "summary": "Rota para ativar",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "cpf",
+                        "type": "string",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "cpf do cliente"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Bad request"
+                    },
+                    "404": {
+                        "description": "Error: Not Found"
+                    },
+                    "500": {
+                        "description": "Erro interno"
+                    }
+                }
+            }
+        },
+        "/beneficiaries/inactivate/{cpf}": {
+            "delete": {
+                "tags": [
+                    "Ações"
+                ],
+                "summary": "Rota para inativar",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "cpf",
+                        "type": "string",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "cpf do cliente"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Bad request"
+                    },
+                    "404": {
+                        "description": "Error: Not Found"
+                    },
+                    "500": {
+                        "description": "Erro interno"
+                    }
+                }
+            }
+        },
+        "/beneficiaries/reactivate/{cpf}": {
+            "put": {
+                "tags": [
+                    "Ações"
+                ],
+                "summary": "Rota para reativar",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "cpf",
+                        "type": "string",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "cpf do cliente"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Bad request"
+                    },
+                    "404": {
+                        "description": "Error: Not Found"
+                    },
+                    "500": {
+                        "description": "Erro interno"
+                    }
+                }
+            }
+        },
+        "/franqueado/clientes": {
+            "post": {
+                "tags": [
+                    "Ações"
+                ],
+                "summary": "Rota para criar um usuário na base de dados",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "nm_cliente": {
+                                        "type": "string",
+                                        "description": "nome do usuario"
+                                    },
+                                    "nu_documento": {
+                                        "type": "string",
+                                        "description": "CPF do usuário"
+                                    },
+                                    "birthday": {
+                                        "type": "string",
+                                        "description": "data de nascimento do usuário"
+                                    },
+                                    "telefone": {
+                                        "type": "string",
+                                        "description": "telefone do usuário"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "description": "email do usuário"
+                                    },
+                                    "zip_code": {
+                                        "type": "string",
+                                        "description": "cep do usuário"
+                                    },
+                                    "address": {
+                                        "type": "string",
+                                        "description": "endereço do usuário"
+                                    },
+                                    "city": {
+                                        "type": "string",
+                                        "description": "cidade do usuário"
+                                    },
+                                    "state": {
+                                        "type": "string",
+                                        "description": "uf do usuário"
+                                    },
+                                    "paymentType": {
+                                        "type": "string",
+                                        "description": "tipo pagamento do usuário padrão {S}"
+                                    },
+                                    "serviceType": {
+                                        "type": "string",
+                                        "description": "tipo serviço do usuário padrão {G}"
+                                    },
+                                       "cpfTitular": {
+                                        "type": "string",
+                                        "description": "cpf do titular, se for um dependente. se não for um dependente repetir o nu_documento"
+                                    }
+                                },
+                                "required": [
+                                    "nm_cliente",
+                                    "nu_documento"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Bad request"
+                    },
+                    "404": {
+                        "description": "Error: Not Found"
+                    },
+                    "500": {
+                        "description": "Erro interno"
+                    }
+                }
+            }
+        }
+    }
+}
