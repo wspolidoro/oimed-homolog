@@ -15,7 +15,7 @@ const sendMailError = require('./routs/sendMailer.js');
 const swaggerUi = require('swagger-ui-express')
 const swaggerDocument = require('./swagger.json');
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(cors());
 
@@ -25,7 +25,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 // Express modules / packages 
 
-app.use('/', rout);
+app.use('/api/', rout);
 
 app.get('/mailerr', async(req, res) => {
     
@@ -37,8 +37,8 @@ app.get('/mailerr', async(req, res) => {
 
 });
 
-app.use('/api', routerApi);
-app.use('/sandbox', routerSandbox);
+app.use('/api/api', routerApi);
+app.use('/api/sandbox', routerSandbox);
 
 
 app.listen(port, () => { // Listen on port 3000 
