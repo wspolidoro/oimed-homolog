@@ -119,7 +119,7 @@ async function mailerPaymentReminder(ccEmails, from, to, subject, text) {
        to,
        cc: ccEmails.join(', '),  // Junta os emails para CC
        subject,
-       text
+       html: text
     });
     return mailSentPT
     //---------------------------------------------------------------------------------->
