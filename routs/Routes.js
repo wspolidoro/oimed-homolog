@@ -20,6 +20,7 @@ const Rapidoc = require('../schema/tb_rapidoc');
 //controllers
 const cadastroNewForm = require('../controllers/cadastroClientes/cadastroNewForm');
 const paymentReminder = require('../controllers/telemedicinaActions/notifications.js');
+const loginWordpress = require('../controllers/login/loginForWp.js');
 const { webhookActivate } = require('../controllers/auto_ativacao/webhook.js');
 
 
@@ -156,6 +157,64 @@ router.post('/auth', async (req, res) => {
   
 });
 
+router.post('/wp/auth', async (req, res) => {
+
+  var { login, pass } = req.body;
+  console.log(login)
+  
+  
+  try {
+    if (login != undefined) {
+
+    //var user = DB.users.find(u => u.email == email);
+
+    const linkUsuarios = await Clientes.findAll();
+
+    //res.json(linkUsuarios);
+
+    var user = linkUsuarios.find(u => u.nu_documento == login);
+    let password = user.nu_documento.substr(0, 4)
+
+   /*  res.json({teste: password});
+    return; */
+
+    if (user != undefined) {
+      if (password == pass) {
+
+        jwt.sign({ id: user.id, email: user.email }, secretKey, { expiresIn: '2h' }, (err, token) => {
+          if (err) {
+            res.status(400);
+            res.json({ success: false, message: "Falha interna..." })
+          } else {
+            res.status(200);
+            res.json({
+              success: true,
+              message: "usuario logado",
+              token: token,
+              data: user
+            });
+          }
+        });
+      } else {
+        res.status(404);
+        res.json({ success: false, message: "acesso invalido" });
+      }
+    } else {
+      res.status(404);
+      res.json({ success: false, message: "email não encontrado" });
+    };
+
+  } else {
+    res.status(400);
+    res.json({ success: false, message: "email invalido" })
+  };
+}catch(err) {
+    res.json({"success": false, "message": err})
+}
+  
+  
+});
+
 //rota principal
 router.get('/', async (req, res) => {
   res.json({ message: 'funcionando', status: 200 });
@@ -215,7 +274,9 @@ router.put('/franqueado/putproducts', async (req, res) => {
 
 //------------Rota para WP FORMS--------------------------------------->
 
-router.post('/cadastrar/clientes/newform', cadastroNewForm.cadastrarVida)
+router.post('/cadastrar/clientes/newform', cadastroNewForm.cadastrarVida);
+
+router.post('/wp/login', loginWordpress.loginWp);
 
 
 //rota de testes para reservar clientes
