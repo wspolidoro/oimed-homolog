@@ -103,7 +103,10 @@ function auth(req, res, next) {
 router.post('/auth', async (req, res) => {
 
   var { email, password } = req.body;
-  console.log(email, password)
+  email = String(email).trim();
+  password = String(password).trim();
+
+  //console.log(email, password)
   
   
   try {
@@ -173,7 +176,7 @@ router.post('/wp/auth', async (req, res) => {
     //res.json(linkUsuarios);
 
     var user = linkUsuarios.find(u => u.nu_documento == login);
-    let password = user.nu_documento.substr(0, 4)
+    let password = user.nu_documento.substr(0, 4);
 
    /*  res.json({teste: password});
     return; */
@@ -806,7 +809,11 @@ router.get('/clientes/list', async (req, res) => {
 //buscar cliente
 router.post('/clientes/seacrh/list', async (req, res) => {
   const nmClientes = await Clientes.findAll({
-    where: { nu_documento: req.body.nu_documento }
+    where: { 
+      nu_documento: {
+        [Op.like] : `${req.body.nu_documento}%`
+      } // req.body.nu_documento
+     }
   });
 
   if (nmClientes) {
