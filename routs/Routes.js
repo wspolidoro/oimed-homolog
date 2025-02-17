@@ -811,13 +811,13 @@ router.post('/clientes/seacrh/list', async (req, res) => {
   const {id, nu_documento} = req.body;
   const nmClientes = await Clientes.findAll({
     where: { 
-      nu_documento: {
+      
         [Op.or]: [
-          { [Op.like] : `${nu_documento}%` },
-          { [Op.like] : `${nu_documento}%` }
+          { nm_cliente: {[Op.like] : `${nu_documento}%` }},
+          { nu_documento: {[Op.like] : `%${nu_documento}%` }}
         ]
         
-      }, // req.body.nu_documento
+      , // req.body.nu_documento
       id_franqueado: id
      }
   });
