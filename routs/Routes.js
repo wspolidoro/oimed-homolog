@@ -248,14 +248,14 @@ router.get('/wp/pagamentos', async (req, res) => {
 
     fetch(url, options)
       .then(res => res.json())
-      .then(json => assinaturas(json.data[0].id))
+      .then(json => assinaturas(json.data[0]))
       .catch(err => console.error(err));
   };
 
   customerId()
 
   function assinaturas(idd) {
-    const url = 'https://api-sandbox.asaas.com/v3/subscriptions?customer=' + idd;
+    const url = 'https://api-sandbox.asaas.com/v3/subscriptions?customer=' + idd.id;
     const options = {
       method: 'GET',
       headers: {
@@ -266,7 +266,7 @@ router.get('/wp/pagamentos', async (req, res) => {
 
     fetch(url, options)
       .then(response => response.json())
-      .then(json => res.json({success: true, assinaturas: json.data}))
+      .then(json => res.json({success: true, assinaturas: json.data, usuario: idd.name}))
       .catch(err => console.error(err));
 
   };
