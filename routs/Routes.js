@@ -237,30 +237,37 @@ router.get('/wp/dependentes/:idd', async (req, res) => {
 router.get('/wp/pagamentos', async (req, res) => {
 
   function customerId() {
-    const url = 'https://api-sandbox.asaas.com/v3/customers?cpfCnpj=87936796967';
+    const url = 'https://api.asaas.com/v3/customers?cpfCnpj='+req.headers.doc;
     const options = {
       method: 'GET',
       headers: {
         accept: 'application/json',
-        access_token: '$aact_MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmUwMGIyZjFhLTY0MGQtNDNlMS04YjZkLTBmMmNhYzIwOGU0YTo6JGFhY2hfZTIyN2NlODctMWRjZi00YmIxLWFhYWEtYjIxNDA4MmIwNjYz'
+        access_token: req.headers.key
       }
     };
 
     fetch(url, options)
       .then(res => res.json())
-      .then(json => assinaturas(json.data[0]))
+      .then(json => { 
+        if(json.data.length > 0) {
+          assinaturas(json.data[0])
+        } else {
+          res.json({success: false, message: "não encontrado"})
+        }
+      })
       .catch(err => console.error(err));
   };
 
   customerId()
 
   function assinaturas(idd) {
-    const url = 'https://api-sandbox.asaas.com/v3/subscriptions?customer=' + idd.id;
+  
+    const url = 'https://api.asaas.com/v3/subscriptions?customer=' + idd.id;
     const options = {
       method: 'GET',
       headers: {
         accept: 'application/json',
-        access_token: '$aact_MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmUwMGIyZjFhLTY0MGQtNDNlMS04YjZkLTBmMmNhYzIwOGU0YTo6JGFhY2hfZTIyN2NlODctMWRjZi00YmIxLWFhYWEtYjIxNDA4MmIwNjYz'
+        access_token: req.headers.key
       }
     };
 
@@ -268,8 +275,10 @@ router.get('/wp/pagamentos', async (req, res) => {
       .then(response => response.json())
       .then(json => res.json({success: true, assinaturas: json.data, usuario: idd.name}))
       .catch(err => console.error(err));
-
+      console.log(url, req.headers.key)
   };
+
+
 
   //res.json({success: true, dependentes: resultDependentes});
 
