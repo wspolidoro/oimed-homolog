@@ -160,6 +160,7 @@ router.post('/auth', async (req, res) => {
   
 });
 
+//rotas para wordpress
 router.post('/wp/auth', async (req, res) => {
 
   var { login, pass } = req.body;
@@ -214,6 +215,21 @@ router.post('/wp/auth', async (req, res) => {
 }catch(err) {
     res.json({"success": false, "message": err})
 }
+  
+  
+});
+
+router.get('/wp/dependentes/:idd', async (req, res) => {
+
+  var idd = req.params.idd;
+
+  const resultDependentes = await Clientes.findAll({
+    where: {
+      cpf_titular: idd
+    }
+  });
+
+  res.json({success: true, dependentes: resultDependentes});
   
   
 });
