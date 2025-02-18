@@ -10,7 +10,7 @@ const { faker } = require('@faker-js/faker');
 const mailer = require('./sendMailer');
 
 //DEBBUG
-const {sendMailError, mailerNewCadastro} = require('./sendMailer.js');
+const { sendMailError, mailerNewCadastro } = require('./sendMailer.js');
 
 //SCHEMAS
 const Franqueado = require('../schema/tb_franqueado');
@@ -27,7 +27,7 @@ const { webhookActivate } = require('../controllers/auto_ativacao/webhook.js');
 
 //Importando APIs para implementação
 //Alloyal
-const {CriarUsuarioAlloyal, InativaUsuarioAlloyal, AtivaUsuarioAlloyal} = require('../controllers/alloyal-oimed/cliente/cliente')
+const { CriarUsuarioAlloyal, InativaUsuarioAlloyal, AtivaUsuarioAlloyal } = require('../controllers/alloyal-oimed/cliente/cliente')
 
 
 //LIBS
@@ -72,30 +72,30 @@ function privateAuth(req, res, next) {
 
 //--------------------authetication--------------------------->
 function auth(req, res, next) {
-    const authToken = req.headers['authorization'];
+  const authToken = req.headers['authorization'];
 
 
-    if (authToken != undefined) {
+  if (authToken != undefined) {
 
-        const bearer = authToken.split(' ');
-        let token = bearer[1];
+    const bearer = authToken.split(' ');
+    let token = bearer[1];
 
-        jwt.verify(token, secretKey, (err, data) => {
-            if (err) {
-                res.status(401);
-                res.json({ success: false, message: "Token inválido" });
-            } else {
-                req.token = token;
-                req.user = { id: data.id, nome: data.nome };
-
-                next();
-            }
-        });
-
-    } else {
+    jwt.verify(token, secretKey, (err, data) => {
+      if (err) {
         res.status(401);
-        res.json({ success: false, message: "Token Inválido" });
-    }
+        res.json({ success: false, message: "Token inválido" });
+      } else {
+        req.token = token;
+        req.user = { id: data.id, nome: data.nome };
+
+        next();
+      }
+    });
+
+  } else {
+    res.status(401);
+    res.json({ success: false, message: "Token Inválido" });
+  }
 
 };
 
@@ -107,57 +107,57 @@ router.post('/auth', async (req, res) => {
   password = String(password).trim();
 
   //console.log(email, password)
-  
-  
+
+
   try {
     if (email != undefined) {
 
-    //var user = DB.users.find(u => u.email == email);
+      //var user = DB.users.find(u => u.email == email);
 
-    const linkFranqueado = await Franqueado.findAll();
+      const linkFranqueado = await Franqueado.findAll();
 
-    //res.json(linkFranqueado);
+      //res.json(linkFranqueado);
 
-    var user = linkFranqueado.find(u => u.email == email);
+      var user = linkFranqueado.find(u => u.email == email);
 
-    //res.json(user);
+      //res.json(user);
 
-    if (user != undefined) {
-      if (user.password == password) {
+      if (user != undefined) {
+        if (user.password == password) {
 
-        jwt.sign({ id: user.id, email: user.email }, secretKey, { expiresIn: '2h' }, (err, token) => {
-          if (err) {
-            res.status(400);
-            res.json({ success: false, message: "Falha interna..." })
-          } else {
-            res.status(200);
-            res.json({
-              success: true,
-              message: "usuario logado",
-              token: token,
-              perfil: user.perfil,
-              id: user.id
-            });
-          }
-        });
+          jwt.sign({ id: user.id, email: user.email }, secretKey, { expiresIn: '2h' }, (err, token) => {
+            if (err) {
+              res.status(400);
+              res.json({ success: false, message: "Falha interna..." })
+            } else {
+              res.status(200);
+              res.json({
+                success: true,
+                message: "usuario logado",
+                token: token,
+                perfil: user.perfil,
+                id: user.id
+              });
+            }
+          });
+        } else {
+          res.status(404);
+          res.json({ success: false, message: "acesso invalido" });
+        }
       } else {
         res.status(404);
-        res.json({ success: false, message: "acesso invalido" });
-      }
-    } else {
-      res.status(404);
-      res.json({ success: false, message: "email não encontrado" });
-    };
+        res.json({ success: false, message: "email não encontrado" });
+      };
 
-  } else {
-    res.status(400);
-    res.json({ success: false, message: "email invalido" })
-  };
-}catch(err) {
-    res.json({"success": false, "message": err})
-}
-  
-  
+    } else {
+      res.status(400);
+      res.json({ success: false, message: "email invalido" })
+    };
+  } catch (err) {
+    res.json({ "success": false, "message": err })
+  }
+
+
 });
 
 //rotas para wordpress
@@ -165,58 +165,58 @@ router.post('/wp/auth', async (req, res) => {
 
   var { login, pass } = req.body;
   console.log(login)
-  
-  
+
+
   try {
     if (login != undefined) {
 
-    //var user = DB.users.find(u => u.email == email);
+      //var user = DB.users.find(u => u.email == email);
 
-    const linkUsuarios = await Clientes.findAll();
+      const linkUsuarios = await Clientes.findAll();
 
-    //res.json(linkUsuarios);
+      //res.json(linkUsuarios);
 
-    var user = linkUsuarios.find(u => u.nu_documento == login);
-    let password = user.nu_documento.substr(0, 4);
+      var user = linkUsuarios.find(u => u.nu_documento == login);
+      let password = user.nu_documento.substr(0, 4);
 
-   /*  res.json({teste: password});
-    return; */
+      /*  res.json({teste: password});
+       return; */
 
-    if (user != undefined) {
-      if (password == pass) {
+      if (user != undefined) {
+        if (password == pass) {
 
-        jwt.sign({ id: user.id, email: user.email }, secretKey, { expiresIn: '2h' }, (err, token) => {
-          if (err) {
-            res.status(400);
-            res.json({ success: false, message: "Falha interna..." })
-          } else {
-            res.status(200);
-            res.json({
-              success: true,
-              message: "usuario logado",
-              token: token,
-              data: user
-            });
-          }
-        });
+          jwt.sign({ id: user.id, email: user.email }, secretKey, { expiresIn: '2h' }, (err, token) => {
+            if (err) {
+              res.status(400);
+              res.json({ success: false, message: "Falha interna..." })
+            } else {
+              res.status(200);
+              res.json({
+                success: true,
+                message: "usuario logado",
+                token: token,
+                data: user
+              });
+            }
+          });
+        } else {
+          res.status(404);
+          res.json({ success: false, message: "acesso invalido" });
+        }
       } else {
         res.status(404);
-        res.json({ success: false, message: "acesso invalido" });
-      }
-    } else {
-      res.status(404);
-      res.json({ success: false, message: "email não encontrado" });
-    };
+        res.json({ success: false, message: "email não encontrado" });
+      };
 
-  } else {
-    res.status(400);
-    res.json({ success: false, message: "email invalido" })
-  };
-}catch(err) {
-    res.json({"success": false, "message": err})
-}
-  
-  
+    } else {
+      res.status(400);
+      res.json({ success: false, message: "email invalido" })
+    };
+  } catch (err) {
+    res.json({ "success": false, "message": err })
+  }
+
+
 });
 
 router.get('/wp/dependentes/:idd', async (req, res) => {
@@ -229,9 +229,51 @@ router.get('/wp/dependentes/:idd', async (req, res) => {
     }
   });
 
-  res.json({success: true, dependentes: resultDependentes});
-  
-  
+  res.json({ success: true, dependentes: resultDependentes });
+
+
+});
+
+router.get('/wp/pagamentos', async (req, res) => {
+
+  function customerId() {
+    const url = 'https://api-sandbox.asaas.com/v3/customers?cpfCnpj=87936796967';
+    const options = {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+        access_token: '$aact_MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmUwMGIyZjFhLTY0MGQtNDNlMS04YjZkLTBmMmNhYzIwOGU0YTo6JGFhY2hfZTIyN2NlODctMWRjZi00YmIxLWFhYWEtYjIxNDA4MmIwNjYz'
+      }
+    };
+
+    fetch(url, options)
+      .then(res => res.json())
+      .then(json => assinaturas(json.data[0].id))
+      .catch(err => console.error(err));
+  };
+
+  customerId()
+
+  function assinaturas(idd) {
+    const url = 'https://api-sandbox.asaas.com/v3/subscriptions?customer=' + idd;
+    const options = {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+        access_token: '$aact_MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6OmUwMGIyZjFhLTY0MGQtNDNlMS04YjZkLTBmMmNhYzIwOGU0YTo6JGFhY2hfZTIyN2NlODctMWRjZi00YmIxLWFhYWEtYjIxNDA4MmIwNjYz'
+      }
+    };
+
+    fetch(url, options)
+      .then(response => response.json())
+      .then(json => res.json({success: true, assinaturas: json.data}))
+      .catch(err => console.error(err));
+
+  };
+
+  //res.json({success: true, dependentes: resultDependentes});
+
+
 });
 
 //rota principal
@@ -333,21 +375,21 @@ router.post('/franqueado/clientes', async (req, res) => {
       id_franqueado: req.body.id_franqueado,
       cpf_titular: "titular"
     });
-    
-    try{
-        if(newCliente.length > 0 && req.body.id_franqueado == 26) {
-            await CriarUsuarioAlloyal(newCliente);
-        }
-    } catch(err) {
-        console.log("erro na criação aloyal: ", err.message);
-    }
-    
 
-    
-    
-    
-    
-     const idFranqueado = newCliente.dataValues.id_franqueado;
+    try {
+      if (newCliente.length > 0 && req.body.id_franqueado == 26) {
+        await CriarUsuarioAlloyal(newCliente);
+      }
+    } catch (err) {
+      console.log("erro na criação aloyal: ", err.message);
+    }
+
+
+
+
+
+
+    const idFranqueado = newCliente.dataValues.id_franqueado;
     const emaildestino = newCliente.dataValues.email;
 
     const dataFranqueado = await Franqueado.findAll({
@@ -356,14 +398,14 @@ router.post('/franqueado/clientes', async (req, res) => {
       }
     });
 
-    
+
     let sending = await mailerNewCadastro(dataFranqueado[0].dataValues, emaildestino); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
-    
+
 
     const arrayDefault = '[{"nm_cliente1":null,"nu_documento1":null,"birthday1":null,"email1":null,"telefone1":null,"zipCode1":null,"address1":null,"city1":null,"state1":null},{"nm_cliente2":null,"nu_documento2":null,"birthday2":null,"email2":null,"telefone2":null,"zipCode2":null,"address2":null,"city2":null,"state2":null},{"nm_cliente3":null,"nu_documento3":null,"birthday3":null,"email3":null,"telefone3":null,"zipCode3":null,"address3":null,"city3":null,"state3":null}]';
 
     if (newCliente) {
-        const beneficiary = JSON.parse(req.body.beneficiarios);
+      const beneficiary = JSON.parse(req.body.beneficiarios);
       beneficiary.map(async (beneficiario, i) => {
         var contador = i + 1;
         if (beneficiario["nm_cliente" + contador] != null) {
@@ -392,8 +434,8 @@ router.post('/franqueado/clientes', async (req, res) => {
             id_franqueado: req.body.id_franqueado,
             cpf_titular: numericCpfNumber
           });
-        
-          
+
+
 
         }
 
@@ -406,8 +448,8 @@ router.post('/franqueado/clientes', async (req, res) => {
     //res.json(newCliente);
 
   } catch (err) {
-      //console.log(err)
-       res.json({ success: false, message: err });
+    //console.log(err)
+    res.json({ success: false, message: err });
     //return res.status(400).json(err)
   }
 
@@ -422,10 +464,10 @@ router.put('/franqueado/clientes/update', async (req, res) => {
 
     var cpfNumber = req.body.nu_documento;
     var numericCpfNumber = cpfNumber.replace(/\D/g, "");
-    
+
     var cpfOriginal = req.body.documento_original;
     var numericCpfOriginal = cpfOriginal.replace(/\D/g, "");
-    
+
     //console.log(numericCpfNumber);
 
     const newCliente = await Clientes.update({
@@ -454,15 +496,15 @@ router.put('/franqueado/clientes/update', async (req, res) => {
       //cpf_titular: "titular"
     }, {
       where: {
-          [Op.or]: [
-                  {nu_documento: numericCpfOriginal},
-                  {nu_documento: cpfOriginal},
-                  {nu_documento: cpfNumber},
-                  {nu_documento: numericCpfNumber},
-              ]
+        [Op.or]: [
+          { nu_documento: numericCpfOriginal },
+          { nu_documento: cpfOriginal },
+          { nu_documento: cpfNumber },
+          { nu_documento: numericCpfNumber },
+        ]
       }
     });
-    
+
     //console.log("mycliente", newCliente)
 
     criarDependenteGeral()
@@ -552,144 +594,144 @@ router.put('/franqueado/clientes/update', async (req, res) => {
     //res.json(newCliente);
 
   } catch (err) {
-     res.status(400)
-     res.json(err)
-     console.log(err)
+    res.status(400)
+    res.json(err)
+    console.log(err)
   }
 
 });
 
 //rota de testes para reservar clientes automatico fpay e cobrefacil
 router.post('/franqueado/vendas', async (req, res) => {
-    
-    if(req.body.categoria != 'link.sucesso') {
-        console.log("erro na transação");
-        console.log(req.body);
+
+  if (req.body.categoria != 'link.sucesso') {
+    console.log("erro na transação");
+    console.log(req.body);
+  } else {
+
+    const referencia = req.body.nu_referencia;
+
+    const venda = await axios.get(`https://api.fpay.me/vendas?nu_referencia=${referencia}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        "Client-Code": "FC-747670",// 'FC-SB-15',
+        "Client-key": "ef88121dbae3c2c1c7eaef044e568ff3"//'6ea297bc5e294666f6738e1d48fa63d2'
+      }
+    });
+    console.log("nu_documento Válido: ", venda.data.data[0])
+    if (venda) {
+      console.log("nu_documento Válido: ", venda.data.data[0].nu_documento)
     } else {
-        
-        const referencia = req.body.nu_referencia;
-    
-        const venda = await axios.get(`https://api.fpay.me/vendas?nu_referencia=${referencia}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            "Client-Code": "FC-747670",// 'FC-SB-15',
-            "Client-key": "ef88121dbae3c2c1c7eaef044e568ff3"//'6ea297bc5e294666f6738e1d48fa63d2'
-          }
-        });
-        console.log("nu_documento Válido: ", venda.data.data[0])
-        if(venda) {
-            console.log("nu_documento Válido: ", venda.data.data[0].nu_documento)
-        } else {
-            console.log("nu_documento Inválido: ", venda.data.data[0].nu_documento);
+      console.log("nu_documento Inválido: ", venda.data.data[0].nu_documento);
+    }
+
+    //res.send(venda.data.data[0].nu_documento);
+    //console.log(venda.data.data[0].nu_documento);
+
+    console.log(req.body)
+    try {
+      const response = await axios.get(`https://api.fpay.me/clientes?nu_documento=${venda.data.data[0].nu_documento}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          "Client-Code": "FC-747670",//'FC-SB-15',
+          "Client-key": "ef88121dbae3c2c1c7eaef044e568ff3"//'6ea297bc5e294666f6738e1d48fa63d2'
         }
-    
-        //res.send(venda.data.data[0].nu_documento);
-        //console.log(venda.data.data[0].nu_documento);
-        
-        console.log(req.body)
-     try {
-        const response = await axios.get(`https://api.fpay.me/clientes?nu_documento=${venda.data.data[0].nu_documento}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            "Client-Code": "FC-747670",//'FC-SB-15',
-            "Client-key": "ef88121dbae3c2c1c7eaef044e568ff3"//'6ea297bc5e294666f6738e1d48fa63d2'
-          }
-        });
-        
-          // Obtém a data atual
-              const dataAtual = new Date();
-    
-              // Obtém o mês atual (valores de 0 a 11, onde 0 é janeiro e 11 é dezembro)
-              const mesAtual = dataAtual.getMonth();
-    
-              // Filtra o objeto com base no mês atual
-              const objetoDoMesAtual = venda.data.data[0].parcelas.filter((parcela) => {
-                // Obtém a data da parcela
-                const dataParcela = new Date(parcela.dt_vencimento);
-    
-                // Obtém o mês da parcela
-                const mesParcela = dataParcela.getMonth();
-    
-                // Verifica se o mês da parcela é igual ao mês atual
-                return mesParcela === mesAtual;
-              });
-              
-              console.log("ver ess aqyui: ",objetoDoMesAtual)
-    
-              const cliente = await Clientes.update({
-                nm_cliente: venda.data.data[0].nm_cliente,
-                nu_documento: venda.data.data[0].nu_documento,
-                email: response.data.data[0].ds_email,
-                dt_venda: venda.data.data[0].dt_venda,
-               // situacao: venda.data.data[0].situacao,
-                nu_parcelas: venda.data.data[0].nu_parcelas,
-                vl_venda: venda.data.data[0].vl_venda,
-                dt_cobranca: objetoDoMesAtual && objetoDoMesAtual.dt_cobranca || "não informado",
-                dt_vencimento: objetoDoMesAtual && objetoDoMesAtual.dt_vencimento || "não informado",
-                dt_pagamento: objetoDoMesAtual && objetoDoMesAtual.dt_pagamento || "não informado",
-                par_atual: objetoDoMesAtual && objetoDoMesAtual.situacao || "não informado"
-              }, {
-                where: {
-                  nu_documento: venda.data.data[0].nu_documento,
-                }
-              });
+      });
 
-        //console.log(venda.data.data[0].parcelas[0].dt_cobranca);
+      // Obtém a data atual
+      const dataAtual = new Date();
 
-        ativarVida(res, venda.data.data[0].nu_documento)
+      // Obtém o mês atual (valores de 0 a 11, onde 0 é janeiro e 11 é dezembro)
+      const mesAtual = dataAtual.getMonth();
+
+      // Filtra o objeto com base no mês atual
+      const objetoDoMesAtual = venda.data.data[0].parcelas.filter((parcela) => {
+        // Obtém a data da parcela
+        const dataParcela = new Date(parcela.dt_vencimento);
+
+        // Obtém o mês da parcela
+        const mesParcela = dataParcela.getMonth();
+
+        // Verifica se o mês da parcela é igual ao mês atual
+        return mesParcela === mesAtual;
+      });
+
+      console.log("ver ess aqyui: ", objetoDoMesAtual)
+
+      const cliente = await Clientes.update({
+        nm_cliente: venda.data.data[0].nm_cliente,
+        nu_documento: venda.data.data[0].nu_documento,
+        email: response.data.data[0].ds_email,
+        dt_venda: venda.data.data[0].dt_venda,
+        // situacao: venda.data.data[0].situacao,
+        nu_parcelas: venda.data.data[0].nu_parcelas,
+        vl_venda: venda.data.data[0].vl_venda,
+        dt_cobranca: objetoDoMesAtual && objetoDoMesAtual.dt_cobranca || "não informado",
+        dt_vencimento: objetoDoMesAtual && objetoDoMesAtual.dt_vencimento || "não informado",
+        dt_pagamento: objetoDoMesAtual && objetoDoMesAtual.dt_pagamento || "não informado",
+        par_atual: objetoDoMesAtual && objetoDoMesAtual.situacao || "não informado"
+      }, {
+        where: {
+          nu_documento: venda.data.data[0].nu_documento,
+        }
+      });
+
+      //console.log(venda.data.data[0].parcelas[0].dt_cobranca);
+
+      ativarVida(res, venda.data.data[0].nu_documento)
         .then(async (result) => {
-            if (result) {
-                console.log("nand: ", venda.data.data[0])
-                
-             /* // Obtém a data atual
-              const dataAtual = new Date();
-    
-              // Obtém o mês atual (valores de 0 a 11, onde 0 é janeiro e 11 é dezembro)
-              const mesAtual = dataAtual.getMonth();
-    
-              // Filtra o objeto com base no mês atual
-              const objetoDoMesAtual = venda.data.data[0].parcelas.filter((parcela) => {
-                // Obtém a data da parcela
-                const dataParcela = new Date(parcela.dt_vencimento);
-    
-                // Obtém o mês da parcela
-                const mesParcela = dataParcela.getMonth();
-    
-                // Verifica se o mês da parcela é igual ao mês atual
-                return mesParcela === mesAtual;
-              });*/
-    
+          if (result) {
+            console.log("nand: ", venda.data.data[0])
 
-              const cliente = await Clientes.update({
-                /*nm_cliente: venda.data.data[0].nm_cliente,
+            /* // Obtém a data atual
+             const dataAtual = new Date();
+   
+             // Obtém o mês atual (valores de 0 a 11, onde 0 é janeiro e 11 é dezembro)
+             const mesAtual = dataAtual.getMonth();
+   
+             // Filtra o objeto com base no mês atual
+             const objetoDoMesAtual = venda.data.data[0].parcelas.filter((parcela) => {
+               // Obtém a data da parcela
+               const dataParcela = new Date(parcela.dt_vencimento);
+   
+               // Obtém o mês da parcela
+               const mesParcela = dataParcela.getMonth();
+   
+               // Verifica se o mês da parcela é igual ao mês atual
+               return mesParcela === mesAtual;
+             });*/
+
+
+            const cliente = await Clientes.update({
+              /*nm_cliente: venda.data.data[0].nm_cliente,
+              nu_documento: venda.data.data[0].nu_documento,
+              email: response.data.data[0].ds_email,
+              dt_venda: venda.data.data[0].dt_venda,*/
+              situacao: "ATIVO"
+              /*nu_parcelas: venda.data.data[0].nu_parcelas,
+              vl_venda: venda.data.data[0].vl_venda,
+              dt_cobranca: (objetoDoMesAtual[0].dt_cobranca) ? objetoDoMesAtual[0].dt_cobranca : "não informado",
+              dt_vencimento: (objetoDoMesAtual[0].dt_vencimento) ? objetoDoMesAtual[0].dt_vencimento : "não informado",
+              dt_pagamento: (objetoDoMesAtual[0].dt_pagamento) ? objetoDoMesAtual[0].dt_pagamento : "não informado",
+              par_atual: (objetoDoMesAtual[0].situacao) ? objetoDoMesAtual[0].situacao : "não informado"*/
+            }, {
+              where: {
                 nu_documento: venda.data.data[0].nu_documento,
-                email: response.data.data[0].ds_email,
-                dt_venda: venda.data.data[0].dt_venda,*/
-                situacao: "ATIVO"
-                /*nu_parcelas: venda.data.data[0].nu_parcelas,
-                vl_venda: venda.data.data[0].vl_venda,
-                dt_cobranca: (objetoDoMesAtual[0].dt_cobranca) ? objetoDoMesAtual[0].dt_cobranca : "não informado",
-                dt_vencimento: (objetoDoMesAtual[0].dt_vencimento) ? objetoDoMesAtual[0].dt_vencimento : "não informado",
-                dt_pagamento: (objetoDoMesAtual[0].dt_pagamento) ? objetoDoMesAtual[0].dt_pagamento : "não informado",
-                par_atual: (objetoDoMesAtual[0].situacao) ? objetoDoMesAtual[0].situacao : "não informado"*/
-              }, {
-                where: {
-                  nu_documento: venda.data.data[0].nu_documento,
-                }
-              });
-            };
-            console.log("resultado da operação: ", result)
-          })
-          .catch((err) => {
-            console.log(err)
-          })
+              }
+            });
+          };
+          console.log("resultado da operação: ", result)
+        })
+        .catch((err) => {
+          console.log(err)
+        })
 
-        } catch (err) {
-            res.status(400);
-            res.send(err);
-            console.log(err);
-        }  
-    };
+    } catch (err) {
+      res.status(400);
+      res.send(err);
+      console.log(err);
+    }
+  };
 });
 
 //buscar link do franqueado
@@ -751,7 +793,7 @@ router.post('/cliente/filter/status/:status', async (req, res) => {
 //buscar lista de franqueados
 router.get('/franqueado/list', async (req, res) => {
   const linkFranqueado = await Franqueado.findAll();
-    countClients();
+  countClients();
 
   res.json(linkFranqueado);
 
@@ -824,18 +866,18 @@ router.get('/clientes/list', async (req, res) => {
 
 //buscar cliente
 router.post('/clientes/seacrh/list', async (req, res) => {
-  const {id, nu_documento} = req.body;
+  const { id, nu_documento } = req.body;
   const nmClientes = await Clientes.findAll({
-    where: { 
-      
-        [Op.or]: [
-          { nm_cliente: {[Op.like] : `${nu_documento}%` }},
-          { nu_documento: {[Op.like] : `%${nu_documento}%` }}
-        ]
-        
+    where: {
+
+      [Op.or]: [
+        { nm_cliente: { [Op.like]: `${nu_documento}%` } },
+        { nu_documento: { [Op.like]: `%${nu_documento}%` } }
+      ]
+
       , // req.body.nu_documento
       id_franqueado: id
-     }
+    }
   });
 
   if (nmClientes) {
@@ -900,11 +942,11 @@ router.put('/franqueado/cliente/status', async (req, res) => {
       situacao: req.body.situacao,
     }, {
       where: {
-          [Op.or]: [
-              {id: req.body.id},
-              {nu_documento: req.body.id},
-            ]
-      
+        [Op.or]: [
+          { id: req.body.id },
+          { nu_documento: req.body.id },
+        ]
+
       }
     });
 
@@ -988,387 +1030,387 @@ router.get('/pdf', async (req, response) => {
 //inativar vida
 router.delete('/beneficiaries/:cpf', async (req, res) => {
   const cpf = req.params.cpf;
-  try{
-      await InativaUsuarioAlloyal(cpf);
-  }catch(err) {
-      console.log("erro ao inativar: ", err.message)
+  try {
+    await InativaUsuarioAlloyal(cpf);
+  } catch (err) {
+    console.log("erro ao inativar: ", err.message)
   }
-    
-try {
-      const response = await axios.get(`https://api.rapidoc.tech/tema/api/beneficiaries/${cpf}`, {
-           headers: {
-      'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
-      'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
-      'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
-        }
-     /*   headers: {
-          'clientId': 'd13f4321-f78e-4261-b9d6-f741da923d72',
-          'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M-VtcJUO5XiDH9ImsqUswxOXv3v9pmVh_6UsuDHoOmLUnmITAh248cplIpccmQDQHBXkp68aiw90JFZuTn3c45_HrWmGdpRxt8wIwxBHimXD8bt0IY2mU3BUSvjy4p36mEuZsINjfwOOib9CZQBljKcg9UbhbDQckUFvs-Q5MF6NKFqqLL360OzhdMtcENIhOZC4qKdgfLSR5xLPaJf6CZew6YiSeuS1jlzIBxgwB2VkI4CdrjyeaVoIewy-qldf4mGu6QC16GAOWnFAs4z6YxWaQ9j-dgoZSDNOiaaJ3363blck8T0wAXJmRsMz0TezOlXthrwY2l8McctMrlyTgeBA8Ny7tztH5CQEug78bul4HfAH5gtZ-xiUPJo_pYqm4fJ4udx5t8HShHGJMxAc81imX5mF7ZAWXSyPEeWGVZqCjK49Dh96VHlTRlQXfImHOQvMIIALTrDmT6J9XIp3v5DkXdc2CjC36q0UKnFeDSDoP08_KJlbWhbRiYgD1vIKEgx1RxyFGASVY1DtkYruytRtk9qow7Cpo95WPiCrqDDBN92rn6XcdO4_NlLPzysr9FsYwwVPSl5MDehtx8Kl2mJREH0Xv0GHeULKcMtp_UEvgeqMtD8LT5y7Nem01OZaMoVJUIYehlGwvZPE_6IqMaloSqO8UWix9SrN_z_bagA',
-          'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
-        }*/
-        });
-        
 
-        if(response.data.success == false) {
-            res.status(404);
-            res.json(response.data.message);
-        } else {
-            async function insertTableRapidoc() {
-            await sequelize.sync();
-            const newRapidoc = await Rapidoc.create({
-              nome: response.data.beneficiary.name,
-              cpf: response.data.beneficiary.cpf,
-              uuid: response.data.beneficiary.uuid,
-              birthday: response.data.beneficiary.birthday
-            })
-            
-            const cliente = await Clientes.update({
-              dtDesativacao: new Date()
-            }, {
-              where: { nu_documento: cpf }
-            });
-          }
-        
-          insertTableRapidoc();
-
-
-            try{
-                  const uuid = response.data.beneficiary.uuid;
-              const retorno = await axios.delete(`https://api.rapidoc.tech/tema/api/beneficiaries/${uuid}`, {
-                headers: {
-                  'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
-                  'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
-                  'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
-                }
-              });
-               if (retorno.data.success === true) {
-                res.json(retorno.data)
-              } else {
-                res.json(retorno.data)
-              }
-            }catch(err) {
-                console.log("testando", err)
-            }
-        }
-/*  */
-    } catch (err) {
-        res.status(500);
-        res.json(err);
-        console.log("caminho do erro: api.js linha 882")
-    }
-
-
-});
-
-//reativar vida
-router.put('/beneficiaries/reactivate/:cpf', async (req, res) => {
-     const cpfinformed = req.params.cpf;
-    
-    try{
-        await AtivaUsuarioAlloyal(cpfinformed);
-    } catch(err) {
-        console.log("erro reativar aloyal 962", err.message)
-    }
-    
-    try{
-
-  const uuidGet = await Rapidoc.findAll({
-    where: {
-      cpf: cpfinformed
-    }
-  })
-
-  console.log(uuidGet)
-  const uuid = uuidGet[0].uuid;
-  const retorno = await axios.put(`https://api.rapidoc.tech/tema/api/beneficiaries/${uuid}/reactivate`, "data", {
-    headers: {
-      'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
-      'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
-      'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
-    }
-  });
-
-      if (retorno.data.success === true) {
-        res.json(retorno.data)
-      } else {
-        res.json(retorno.data)
+  try {
+    const response = await axios.get(`https://api.rapidoc.tech/tema/api/beneficiaries/${cpf}`, {
+      headers: {
+        'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
+        'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
+        'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
       }
-    }catch(err) {
-        console.log("caminho do erro: Routes.js linha 914")
-        //console.log("erro do reactivate: ", err)
-    }
-});
-
-///ativar vida manualmente via painel oimed
-router.post('/beneficiaries/create/:cpf', async (req, res) => {
-  const cpf = req.params.cpf;
-  
-      if(req.body == 1) {
-          
-            //configuracao da data
-            const myDate = req.body.birthday;
-            console.log(req.body)
-            
-            const dia = myDate.substr(0, 2);
-            const mes = myDate.substr(2, 2);
-            const ano = myDate.substr(4, 4);
-        
-            const dataVerify = /\//.test(myDate);
-            
-            var modifieData1 = () => {
-                const dataSplit = myDate.split('/');
-                const format = `${dataSplit[2]}-${dataSplit[1]}-${dataSplit[0]}`;
-                
-                return format;
-            };
-            
-            var modifieData2 = `${ano}-${mes}-${dia}`;
-        
-            const birthdayFormat =  dataVerify ? modifieData1() : modifieData2; //formatar data para 0000-00-00
-        
-            //Array principal que vai para rapidoc
-            const arrBD = [
-              {
-                "name": req.body.name,
-                "cpf": req.body.cpf,
-                "birthday": birthdayFormat,
-                "phone": req.body.phone,
-                "email": req.body.email,
-                "zipCode": req.body.zipCode,
-                "address": req.body.address,
-                "city": req.body.city,
-                "state": req.body.state,
-                "paymentType": "S",
-                "serviceType": "G",
-                "holder": req.body.holder,
-                "general": ""
-              }
-            ];
-
-
-          
-          const response = await axios.post(`https://api.rapidoc.tech/tema/api/beneficiaries`, arrBD, {
-              headers: {
-                'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
-                'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
-                'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
-              }
-            });
-        
-        
-        
-            if (response.data.success == true) {
-              //acão para registrar ativaçao da vida na rapidoc
-             /* const franqueado = await Franqueado.findAll({
-                where: { id: cliente[0].id_franqueado }
-              });
-        
-              let vidasAtivas = franqueado[0].vendas;
-        
-              const novaVida = await Franqueado.update({
-                vendas: parseInt(vidasAtivas) + 1,
-              }, {
-                where: {
-                  id: cliente[0].id_franqueado,
-                }
-              });*/
-        
-              //resposta para o cliente
-              res.send(response.data);
-              console.log(response.data)
-              console.log("criado: ", response.data);
-              return true;
-            } else {
-              res.send(response.data);
-              console.log("erro ao criar indie: ", response.data);
-              return false;
-            }
-      }
-
-    //buscar dados pelo cpf na tabela de clientes
-    const cliente = await Clientes.findAll({
-      where: { nu_documento: cpf }
+      /*   headers: {
+           'clientId': 'd13f4321-f78e-4261-b9d6-f741da923d72',
+           'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M-VtcJUO5XiDH9ImsqUswxOXv3v9pmVh_6UsuDHoOmLUnmITAh248cplIpccmQDQHBXkp68aiw90JFZuTn3c45_HrWmGdpRxt8wIwxBHimXD8bt0IY2mU3BUSvjy4p36mEuZsINjfwOOib9CZQBljKcg9UbhbDQckUFvs-Q5MF6NKFqqLL360OzhdMtcENIhOZC4qKdgfLSR5xLPaJf6CZew6YiSeuS1jlzIBxgwB2VkI4CdrjyeaVoIewy-qldf4mGu6QC16GAOWnFAs4z6YxWaQ9j-dgoZSDNOiaaJ3363blck8T0wAXJmRsMz0TezOlXthrwY2l8McctMrlyTgeBA8Ny7tztH5CQEug78bul4HfAH5gtZ-xiUPJo_pYqm4fJ4udx5t8HShHGJMxAc81imX5mF7ZAWXSyPEeWGVZqCjK49Dh96VHlTRlQXfImHOQvMIIALTrDmT6J9XIp3v5DkXdc2CjC36q0UKnFeDSDoP08_KJlbWhbRiYgD1vIKEgx1RxyFGASVY1DtkYruytRtk9qow7Cpo95WPiCrqDDBN92rn6XcdO4_NlLPzysr9FsYwwVPSl5MDehtx8Kl2mJREH0Xv0GHeULKcMtp_UEvgeqMtD8LT5y7Nem01OZaMoVJUIYehlGwvZPE_6IqMaloSqO8UWix9SrN_z_bagA',
+           'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+         }*/
     });
-    
-        if(cliente.length < 1) {
-            return;
-        }
- 
-
-    //configuracao da data
-    const myDate = cliente[0].birthday;
-
-    
-    const dia = myDate.substr(0, 2);
-    const mes = myDate.substr(2, 2);
-    const ano = myDate.substr(4, 4);
-
-    const dataVerify = /\//.test(myDate);
-    
-    var modifieData1 = () => {
-        const dataSplit = myDate.split('/');
-  
-        const format = `${dataSplit[2]}-${dataSplit[1]}-${dataSplit[0]}`;
-         
-        // Regex para encontrar um espaço em branco em qualquer lugar na string
-        const cleanedDateString = format.replace(/\s/g, '');
-        
-        return cleanedDateString;
-    };
-    
-    var modifieData2 = `${ano}-${mes}-${dia}`;
-
-    const birthdayFormat =  dataVerify ? modifieData1() : modifieData2; //formatar data para 0000-00-00
-    
-    console.log(modifieData2, birthdayFormat)
-
-    //Array principal que vai para rapidoc
-    const arrBD = [
-      {
-        "name": cliente[0].nm_cliente,
-        "cpf": cliente[0].nu_documento,
-        "birthday": birthdayFormat,
-        "phone": cliente[0].telefone,
-        "email": cliente[0].email,
-        "zipCode": cliente[0].zip_code,
-        "address": "rua do teste, 01",//cliente[0].address,
-        "city": cliente[0].city,
-        "state": cliente[0].state.length <=2 ? cliente[0].state : cliente[0].state.substr(cliente[0].state.length-3, 2),
-        "paymentType": cliente[0].paymentType,
-        "serviceType": cliente[0].serviceType,
-        "holder": "",
-        "general": ""
-      }
-    ];
 
 
+    if (response.data.success == false) {
+      res.status(404);
+      res.json(response.data.message);
+    } else {
+      async function insertTableRapidoc() {
+        await sequelize.sync();
+        const newRapidoc = await Rapidoc.create({
+          nome: response.data.beneficiary.name,
+          cpf: response.data.beneficiary.cpf,
+          uuid: response.data.beneficiary.uuid,
+          birthday: response.data.beneficiary.birthday
+        })
 
-
-
-    //console.log("clientessssssssssssssss", cliente[0])
-    const dataArr = JSON.parse(cliente[0].beneficiarios);
-    //console.log("debug: ", dataArr)
-    //console.log(dataArr[0].birthday1)
-    //try {
-        
-    if (dataArr[0].nu_documento1 != null) {
-        console.log("testando")
-        const data = dataArr[0].birthday1.split('/');
-      const birthdayFormat1 = data ? data : null;
-      
-      console.log("teste da data", dataArr[0].nu_documento1)
-
-      const dep1 = {
-        "name": dataArr[0].nm_cliente1,
-        "cpf": dataArr[0].nu_documento1,
-        "birthday": `${birthdayFormat1[2]}-${birthdayFormat1[1]}-${birthdayFormat1[0]}`,
-        "phone": dataArr[0].telefone1,
-        "email": dataArr[0].email1,
-        "zipCode": dataArr[0].zipCode1,
-        "address": dataArr[0].address1,
-        "city": dataArr[0].city1,
-        "state": dataArr[0].state1.length <= 2 ? dataArr[0].state1 : dataArr[0].state1.substr(dataArr[0].state1.length-3, 2),
-        "holder": cliente[0].nu_documento
+        const cliente = await Clientes.update({
+          dtDesativacao: new Date()
+        }, {
+          where: { nu_documento: cpf }
+        });
       }
 
-      arrBD.push(dep1);
-    } else if (dataArr[1].nu_documento2 != null) {
-        const data = dataArr[1].birthday1.split('/');
-      const birthdayFormat2 = data ? data : null;
+      insertTableRapidoc();
 
-      const dep2 = {
-        "name": dataArr[1].nm_cliente2,
-        "cpf": dataArr[1].nu_documento2,
-        "birthday": `${birthdayFormat2[2]}-${birthdayFormat2[1]}-${birthdayFormat2[0]}`,
-        "phone": dataArr[1].telefone2,
-        "email": dataArr[1].email2,
-        "zipCode": dataArr[1].zipCode2,
-        "address": dataArr[1].address2,
-        "city": dataArr[1].city2,
-        "state": dataArr[0].state2.length <= 2 ? dataArr[0].state2 : dataArr[0].state2.substr(dataArr[0].state2.length-3, 2),
-        "holder": cliente[0].nu_documento
-      }
 
-      arrBD.push(dep2);
-    } else if (dataArr[2].nu_documento3 != null) {
-        const data = dataArr[2].birthday1.split('/');
-      const birthdayFormat3 = data ? data : null;
-
-      const dep3 = {
-        "name": dataArr[2].nm_cliente3,
-        "cpf": dataArr[2].nu_documento3,
-        "birthday": `${birthdayFormat3[2]}-${birthdayFormat3[1]}-${birthdayFormat3[0]}`,
-        "phone": dataArr[2].telefone3,
-        "email": dataArr[2].email3,
-        "zipCode": dataArr[2].zipCode3,
-        "address": dataArr[2].address3,
-        "city": dataArr[2].city3,
-        "state": dataArr[0].state3.length <= 2 ? dataArr[0].state3 : dataArr[0].state3.substr(dataArr[0].state3.length-3, 2),
-        "holder": cliente[0].nu_documento
-      };
-
-      arrBD.push(dep3);
-    }
-        
-   // } catch(err) {
-    //    console.log("erro ao montar registro - linha 1215: ", err.message)
-    //}
- 
-      console.log("debug: ", dataArr)
-    console.log("origewm: ", arrBD);
-    
- try {
-    const response = await axios.post(`https://api.rapidoc.tech/tema/api/beneficiaries`, arrBD, {
+      try {
+        const uuid = response.data.beneficiary.uuid;
+        const retorno = await axios.delete(`https://api.rapidoc.tech/tema/api/beneficiaries/${uuid}`, {
           headers: {
             'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
             'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
             'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
           }
         });
-    
-    console.log("resposta: ", response.data)
+        if (retorno.data.success === true) {
+          res.json(retorno.data)
+        } else {
+          res.json(retorno.data)
+        }
+      } catch (err) {
+        console.log("testando", err)
+      }
+    }
+    /*  */
+  } catch (err) {
+    res.status(500);
+    res.json(err);
+    console.log("caminho do erro: api.js linha 882")
+  }
+
+
+});
+
+//reativar vida
+router.put('/beneficiaries/reactivate/:cpf', async (req, res) => {
+  const cpfinformed = req.params.cpf;
+
+  try {
+    await AtivaUsuarioAlloyal(cpfinformed);
+  } catch (err) {
+    console.log("erro reativar aloyal 962", err.message)
+  }
+
+  try {
+
+    const uuidGet = await Rapidoc.findAll({
+      where: {
+        cpf: cpfinformed
+      }
+    })
+
+    console.log(uuidGet)
+    const uuid = uuidGet[0].uuid;
+    const retorno = await axios.put(`https://api.rapidoc.tech/tema/api/beneficiaries/${uuid}/reactivate`, "data", {
+      headers: {
+        'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
+        'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
+        'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+      }
+    });
+
+    if (retorno.data.success === true) {
+      res.json(retorno.data)
+    } else {
+      res.json(retorno.data)
+    }
+  } catch (err) {
+    console.log("caminho do erro: Routes.js linha 914")
+    //console.log("erro do reactivate: ", err)
+  }
+});
+
+///ativar vida manualmente via painel oimed
+router.post('/beneficiaries/create/:cpf', async (req, res) => {
+  const cpf = req.params.cpf;
+
+  if (req.body == 1) {
+
+    //configuracao da data
+    const myDate = req.body.birthday;
+    console.log(req.body)
+
+    const dia = myDate.substr(0, 2);
+    const mes = myDate.substr(2, 2);
+    const ano = myDate.substr(4, 4);
+
+    const dataVerify = /\//.test(myDate);
+
+    var modifieData1 = () => {
+      const dataSplit = myDate.split('/');
+      const format = `${dataSplit[2]}-${dataSplit[1]}-${dataSplit[0]}`;
+
+      return format;
+    };
+
+    var modifieData2 = `${ano}-${mes}-${dia}`;
+
+    const birthdayFormat = dataVerify ? modifieData1() : modifieData2; //formatar data para 0000-00-00
+
+    //Array principal que vai para rapidoc
+    const arrBD = [
+      {
+        "name": req.body.name,
+        "cpf": req.body.cpf,
+        "birthday": birthdayFormat,
+        "phone": req.body.phone,
+        "email": req.body.email,
+        "zipCode": req.body.zipCode,
+        "address": req.body.address,
+        "city": req.body.city,
+        "state": req.body.state,
+        "paymentType": "S",
+        "serviceType": "G",
+        "holder": req.body.holder,
+        "general": ""
+      }
+    ];
 
 
 
+    const response = await axios.post(`https://api.rapidoc.tech/tema/api/beneficiaries`, arrBD, {
+      headers: {
+        'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
+        'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
+        'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+      }
+    });
 
-//console.log("0---------------> ", response.data)
+
 
     if (response.data.success == true) {
-        
-        
-      const cliente = await Clientes.update({
-          dtAtivacao: new Date()
-        }, {
-          where: { nu_documento: cpf }
-        });
-        
       //acão para registrar ativaçao da vida na rapidoc
-     /* const franqueado = await Franqueado.findAll({
-        where: { id: cliente[0].id_franqueado }
-      });
-
-      let vidasAtivas = franqueado[0].vendas;
-
-      const novaVida = await Franqueado.update({
-        vendas: parseInt(vidasAtivas) + 1,
-      }, {
-        where: {
-          id: cliente[0].id_franqueado,
-        }
-      });*/
+      /* const franqueado = await Franqueado.findAll({
+         where: { id: cliente[0].id_franqueado }
+       });
+ 
+       let vidasAtivas = franqueado[0].vendas;
+ 
+       const novaVida = await Franqueado.update({
+         vendas: parseInt(vidasAtivas) + 1,
+       }, {
+         where: {
+           id: cliente[0].id_franqueado,
+         }
+       });*/
 
       //resposta para o cliente
       res.send(response.data);
       console.log(response.data)
       console.log("criado: ", response.data);
-       let sending = await sendMailError(arrBD, "Vida cadastrada na Central principal", response.data, cliente[0].id_franqueado, "CONCLUIDO"); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
+      return true;
+    } else {
+      res.send(response.data);
+      console.log("erro ao criar indie: ", response.data);
+      return false;
+    }
+  }
+
+  //buscar dados pelo cpf na tabela de clientes
+  const cliente = await Clientes.findAll({
+    where: { nu_documento: cpf }
+  });
+
+  if (cliente.length < 1) {
+    return;
+  }
+
+
+  //configuracao da data
+  const myDate = cliente[0].birthday;
+
+
+  const dia = myDate.substr(0, 2);
+  const mes = myDate.substr(2, 2);
+  const ano = myDate.substr(4, 4);
+
+  const dataVerify = /\//.test(myDate);
+
+  var modifieData1 = () => {
+    const dataSplit = myDate.split('/');
+
+    const format = `${dataSplit[2]}-${dataSplit[1]}-${dataSplit[0]}`;
+
+    // Regex para encontrar um espaço em branco em qualquer lugar na string
+    const cleanedDateString = format.replace(/\s/g, '');
+
+    return cleanedDateString;
+  };
+
+  var modifieData2 = `${ano}-${mes}-${dia}`;
+
+  const birthdayFormat = dataVerify ? modifieData1() : modifieData2; //formatar data para 0000-00-00
+
+  console.log(modifieData2, birthdayFormat)
+
+  //Array principal que vai para rapidoc
+  const arrBD = [
+    {
+      "name": cliente[0].nm_cliente,
+      "cpf": cliente[0].nu_documento,
+      "birthday": birthdayFormat,
+      "phone": cliente[0].telefone,
+      "email": cliente[0].email,
+      "zipCode": cliente[0].zip_code,
+      "address": "rua do teste, 01",//cliente[0].address,
+      "city": cliente[0].city,
+      "state": cliente[0].state.length <= 2 ? cliente[0].state : cliente[0].state.substr(cliente[0].state.length - 3, 2),
+      "paymentType": cliente[0].paymentType,
+      "serviceType": cliente[0].serviceType,
+      "holder": "",
+      "general": ""
+    }
+  ];
+
+
+
+
+
+  //console.log("clientessssssssssssssss", cliente[0])
+  const dataArr = JSON.parse(cliente[0].beneficiarios);
+  //console.log("debug: ", dataArr)
+  //console.log(dataArr[0].birthday1)
+  //try {
+
+  if (dataArr[0].nu_documento1 != null) {
+    console.log("testando")
+    const data = dataArr[0].birthday1.split('/');
+    const birthdayFormat1 = data ? data : null;
+
+    console.log("teste da data", dataArr[0].nu_documento1)
+
+    const dep1 = {
+      "name": dataArr[0].nm_cliente1,
+      "cpf": dataArr[0].nu_documento1,
+      "birthday": `${birthdayFormat1[2]}-${birthdayFormat1[1]}-${birthdayFormat1[0]}`,
+      "phone": dataArr[0].telefone1,
+      "email": dataArr[0].email1,
+      "zipCode": dataArr[0].zipCode1,
+      "address": dataArr[0].address1,
+      "city": dataArr[0].city1,
+      "state": dataArr[0].state1.length <= 2 ? dataArr[0].state1 : dataArr[0].state1.substr(dataArr[0].state1.length - 3, 2),
+      "holder": cliente[0].nu_documento
+    }
+
+    arrBD.push(dep1);
+  } else if (dataArr[1].nu_documento2 != null) {
+    const data = dataArr[1].birthday1.split('/');
+    const birthdayFormat2 = data ? data : null;
+
+    const dep2 = {
+      "name": dataArr[1].nm_cliente2,
+      "cpf": dataArr[1].nu_documento2,
+      "birthday": `${birthdayFormat2[2]}-${birthdayFormat2[1]}-${birthdayFormat2[0]}`,
+      "phone": dataArr[1].telefone2,
+      "email": dataArr[1].email2,
+      "zipCode": dataArr[1].zipCode2,
+      "address": dataArr[1].address2,
+      "city": dataArr[1].city2,
+      "state": dataArr[0].state2.length <= 2 ? dataArr[0].state2 : dataArr[0].state2.substr(dataArr[0].state2.length - 3, 2),
+      "holder": cliente[0].nu_documento
+    }
+
+    arrBD.push(dep2);
+  } else if (dataArr[2].nu_documento3 != null) {
+    const data = dataArr[2].birthday1.split('/');
+    const birthdayFormat3 = data ? data : null;
+
+    const dep3 = {
+      "name": dataArr[2].nm_cliente3,
+      "cpf": dataArr[2].nu_documento3,
+      "birthday": `${birthdayFormat3[2]}-${birthdayFormat3[1]}-${birthdayFormat3[0]}`,
+      "phone": dataArr[2].telefone3,
+      "email": dataArr[2].email3,
+      "zipCode": dataArr[2].zipCode3,
+      "address": dataArr[2].address3,
+      "city": dataArr[2].city3,
+      "state": dataArr[0].state3.length <= 2 ? dataArr[0].state3 : dataArr[0].state3.substr(dataArr[0].state3.length - 3, 2),
+      "holder": cliente[0].nu_documento
+    };
+
+    arrBD.push(dep3);
+  }
+
+  // } catch(err) {
+  //    console.log("erro ao montar registro - linha 1215: ", err.message)
+  //}
+
+  console.log("debug: ", dataArr)
+  console.log("origewm: ", arrBD);
+
+  try {
+    const response = await axios.post(`https://api.rapidoc.tech/tema/api/beneficiaries`, arrBD, {
+      headers: {
+        'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
+        'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
+        'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+      }
+    });
+
+    console.log("resposta: ", response.data)
+
+
+
+
+    //console.log("0---------------> ", response.data)
+
+    if (response.data.success == true) {
+
+
+      const cliente = await Clientes.update({
+        dtAtivacao: new Date()
+      }, {
+        where: { nu_documento: cpf }
+      });
+
+      //acão para registrar ativaçao da vida na rapidoc
+      /* const franqueado = await Franqueado.findAll({
+         where: { id: cliente[0].id_franqueado }
+       });
+ 
+       let vidasAtivas = franqueado[0].vendas;
+ 
+       const novaVida = await Franqueado.update({
+         vendas: parseInt(vidasAtivas) + 1,
+       }, {
+         where: {
+           id: cliente[0].id_franqueado,
+         }
+       });*/
+
+      //resposta para o cliente
+      res.send(response.data);
+      console.log(response.data)
+      console.log("criado: ", response.data);
+      let sending = await sendMailError(arrBD, "Vida cadastrada na Central principal", response.data, cliente[0].id_franqueado, "CONCLUIDO"); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
       return true;
     } else {
       res.send(response.data);
       console.log("erro ao criar: ", response.data);
       console.log("kledisom")
-       let sending = await sendMailError(arrBD, "Vida não cadastrada na Central principal", response.data, cliente[0].id_franqueado, "PENDENTE");
-         //let sendingCadastro = await mailerNewCadastro([], "Vida cadastrada na Central principal", 'response.data, cliente[0].id_franqueado', "CONCLUIDO"); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
+      let sending = await sendMailError(arrBD, "Vida não cadastrada na Central principal", response.data, cliente[0].id_franqueado, "PENDENTE");
+      //let sendingCadastro = await mailerNewCadastro([], "Vida cadastrada na Central principal", 'response.data, cliente[0].id_franqueado', "CONCLUIDO"); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
 
       return false;
     }
@@ -1431,12 +1473,12 @@ router.post('/ativacao', async (req, res) => {
     ];
 
     const response = await axios.post(`https://api.rapidoc.tech/tema/api/beneficiaries`, arrBD, {
-           headers: {
-      'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
-      'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
-      'Content-Type': 'application/json'
-      //'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
-    }
+      headers: {
+        'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
+        'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
+        'Content-Type': 'application/json'
+        //'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+      }
     });
 
 
@@ -1453,7 +1495,7 @@ router.post('/ativacao', async (req, res) => {
 
   } catch (err) {
     res.status(400).json(err);
- console.log("caminho do erro: api.js linha 1242")
+    console.log("caminho do erro: api.js linha 1242")
   }
 
 
@@ -1572,11 +1614,11 @@ async function ativarVida(res, cpf) {
 
     if (response.data.success == true) {
       res.send(response.data);
-        console.log("if: ", response.data);
+      console.log("if: ", response.data);
       return true;
     } else {
       res.send(response.data);
-        console.log("else: ", response.data);
+      console.log("else: ", response.data);
       return false;
     }
 
@@ -1590,34 +1632,34 @@ async function ativarVida(res, cpf) {
 
 //atualizar quantidade de Clientes
 async function countClients() {
-    const franqueados = await Franqueado.findAll();
-    franqueados.forEach(async (franqueado)=>{
-        
-         
-           const linkFranqueado = await Franqueado.findAll({
-              where: {
-                cpf: franqueado.cpf
-              }
-            });
+  const franqueados = await Franqueado.findAll();
+  franqueados.forEach(async (franqueado) => {
 
-            const linkCliente = await Clientes.findAll({
-              where: {
-                id_franqueado: linkFranqueado[0].id
-              }
-            });
-        
 
-            //atualizar quantidade de Clientes
-            const upFranqueado = await Franqueado.update({
-                 total_clientes: linkCliente.length
-                },{
-                 where: {
-                        cpf: franqueado.cpf
-                    }
-            })
-          
+    const linkFranqueado = await Franqueado.findAll({
+      where: {
+        cpf: franqueado.cpf
+      }
     });
-    
+
+    const linkCliente = await Clientes.findAll({
+      where: {
+        id_franqueado: linkFranqueado[0].id
+      }
+    });
+
+
+    //atualizar quantidade de Clientes
+    const upFranqueado = await Franqueado.update({
+      total_clientes: linkCliente.length
+    }, {
+      where: {
+        cpf: franqueado.cpf
+      }
+    })
+
+  });
+
 }
 
 //Payment reminder
