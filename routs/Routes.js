@@ -237,7 +237,7 @@ router.get('/wp/dependentes/:idd', async (req, res) => {
 router.get('/wp/pagamentos', async (req, res) => {
 
   function customerId() {
-    const url = 'https://api.asaas.com/v3/customers?cpfCnpj='+req.headers.doc;
+    const url = 'https://api.asaas.com/v3/customers?cpfCnpj=' + req.headers.doc;
     const options = {
       method: 'GET',
       headers: {
@@ -248,20 +248,23 @@ router.get('/wp/pagamentos', async (req, res) => {
 
     fetch(url, options)
       .then(res => res.json())
-      .then(json => { 
-        if(json.data.length > 0) {
+      .then(json => {
+        if (json.data.length > 0) {
           assinaturas(json.data[0])
         } else {
-          res.json({success: false, message: "não encontrado"})
+          res.json({ success: false, message: "não encontrado" })
         }
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        res.status(401).json({ success: false, message: "não autorizado" })
+        console.error("kledisom", err)
+      });
   };
 
   customerId()
 
   function assinaturas(idd) {
-  
+
     const url = 'https://api.asaas.com/v3/subscriptions?customer=' + idd.id;
     const options = {
       method: 'GET',
@@ -273,9 +276,9 @@ router.get('/wp/pagamentos', async (req, res) => {
 
     fetch(url, options)
       .then(response => response.json())
-      .then(json => res.json({success: true, assinaturas: json.data, usuario: idd.name}))
+      .then(json => res.json({ success: true, assinaturas: json.data, usuario: idd.name }))
       .catch(err => console.error(err));
-      console.log(url, req.headers.key)
+    console.log(url, req.headers.key)
   };
 
 
@@ -1040,7 +1043,7 @@ router.get('/pdf', async (req, response) => {
 router.delete('/beneficiaries/:cpf', async (req, res) => {
   const cpf = req.params.cpf;
   try {
-    await InativaUsuarioAlloyal(cpf);
+    //await InativaUsuarioAlloyal(cpf);
   } catch (err) {
     console.log("erro ao inativar: ", err.message)
   }
@@ -1061,6 +1064,7 @@ router.delete('/beneficiaries/:cpf', async (req, res) => {
 
 
     if (response.data.success == false) {
+      console.log(response.data)
       res.status(404);
       res.json(response.data.message);
     } else {
@@ -1145,7 +1149,7 @@ router.put('/beneficiaries/reactivate/:cpf', async (req, res) => {
       res.json(retorno.data)
     }
   } catch (err) {
-    console.log("caminho do erro: Routes.js linha 914")
+    console.log("caminho do erro: Routes.js linha 914 reativação")
     //console.log("erro do reactivate: ", err)
   }
 });
@@ -1153,6 +1157,7 @@ router.put('/beneficiaries/reactivate/:cpf', async (req, res) => {
 ///ativar vida manualmente via painel oimed
 router.post('/beneficiaries/create/:cpf', async (req, res) => {
   const cpf = req.params.cpf;
+
 
   if (req.body == 1) {
 
@@ -1241,9 +1246,21 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
     where: { nu_documento: cpf }
   });
 
+
+  //console.log('manutenção', serviceVerification(cliente[0].serviceType))
+  function serviceVerification(serviceType) {
+    if (serviceType === 'GS' || serviceType === 'GSP') {
+      return 'G';
+    } else {
+      return serviceType;
+    };
+  }
+
+
   if (cliente.length < 1) {
     return;
   }
+
 
 
   //configuracao da data
@@ -1286,9 +1303,9 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
       "city": cliente[0].city,
       "state": cliente[0].state.length <= 2 ? cliente[0].state : cliente[0].state.substr(cliente[0].state.length - 3, 2),
       "paymentType": cliente[0].paymentType,
-      "serviceType": cliente[0].serviceType,
-      "holder": "",
-      "general": ""
+      "serviceType": serviceVerification(cliente[0].serviceType),
+      "holder": cliente[0].cpf_titular === 'titular' ? "" : cliente[0].cpf_titular,
+      "general": cliente[0].id_franqueado
     }
   ];
 

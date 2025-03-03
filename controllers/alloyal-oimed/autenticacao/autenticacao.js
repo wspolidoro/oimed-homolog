@@ -5,7 +5,11 @@ async function AutenticaAlloyal(){
   const options = {
     method: 'POST',
     url: 'https://api.lecupon.com/client/v2/sign_in',
-    headers: {accept: 'application/json', 'content-type': 'application/json'},
+    headers: {
+      accept: 'application/json',
+       'content-type': 'application/json',
+       'X-Session-Token': '37L8*PsXaa'
+      },
     data: {email: 'api.poupeaqui@lecupon.com', password: '12345678'}
   };
 
@@ -17,6 +21,7 @@ async function AutenticaAlloyal(){
     return { token, email: options.data.email };
   } catch (error) {
     console.error(error);
+    console.log('kledisom')
     return null; 
   }
 }

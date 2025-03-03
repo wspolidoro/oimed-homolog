@@ -29,90 +29,92 @@ const apiSecret = '587c94cef1553a7b91bb79f63d724e609aa8c84101831502ccbae5c4f90c1
 
 
 async function CriarUsuarioAlloyal(cliente) {
-    // 1. Obter o token de autenticação
-    const autenticacao = await AutenticaAlloyal();
-  
-    if (!autenticacao) {
-      console.error('Falha ao obter token e email de autenticação!');
-      return;
-    }
+  // 1. Obter o token de autenticação
+  const autenticacao = await AutenticaAlloyal();
 
-    const {token, email} = autenticacao;
-
-    const userPassword = cliente.nu_documento.slice(0, 6);
-
-  
-    // 2. Inserir o token nos headers da requisição
-    const options = {
-      method: 'POST',
-      url: `https://api.lecupon.com/client/v2/businesses/${businessId}/users`,
-      headers: {
-        accept: 'application/json',
-        'X-ClientEmployee-Token': token,
-        'X-ClientEmployee-Email': email,
-        'content-type': 'application/json'
-      },
-      data: {
-        name: cliente.nm_cliente,
-        cpf: cliente.nu_documento,
-        email: cliente.email,
-        cellphone: cliente.telefone,
-        password: userPassword 
-      }
-    };
-  
-    // 3. Realizar a requisição para criar o usuário
-    try {
-        const response = await axios.request(options);
-        console.log('Usuário criado ou reativado com sucesso na Alloyal:', response.data);
-        return response.data;
-      } catch (error) {
-        console.error('Erro ao criar ou reativar usuário na Alloyal:', error.message);
-        throw error;
-      }
-  }
-  
-
-async function InativaUsuarioAlloyal(cpf) {
- /* const autenticacao = await AutenticaAlloyal();
-  
   if (!autenticacao) {
     console.error('Falha ao obter token e email de autenticação!');
     return;
   }
 
-  const {token, email} = autenticacao;
+  const { token, email } = autenticacao;
+
+  const userPassword = cliente.nu_documento.slice(0, 6);
 
 
+  // 2. Inserir o token nos headers da requisição
   const options = {
-    method: 'DELETE',
-    url: `https://api.lecupon.com/client/v2/businesses/${businessId}/authorized_users/${cpf}`,
+    method: 'POST',
+    url: `https://api.lecupon.com/client/v2/businesses/${businessId}/users`,
     headers: {
       accept: 'application/json',
       'X-ClientEmployee-Token': token,
-      'X-ClientEmployee-Email': email
+      'X-ClientEmployee-Email': email,
+      'content-type': 'application/json',
+      'X-Session-Token': '37L8*PsXaa'
+    },
+    data: {
+      name: cliente.nm_cliente,
+      cpf: cliente.nu_documento,
+      email: cliente.email,
+      cellphone: cliente.telefone,
+      password: userPassword
     }
   };
 
+  // 3. Realizar a requisição para criar o usuário
   try {
     const response = await axios.request(options);
-    console.log('Usuário inativado com sucesso na Alloyal:', response.data);
+    console.log('Usuário criado ou reativado com sucesso na Alloyal:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Erro ao inativar usuário na Alloyal:', error.message);
+    console.error('Erro ao criar ou reativar usuário na Alloyal:', error.message);
     throw error;
-  }*/
+  }
+}
+
+
+async function InativaUsuarioAlloyal(cpf) {
+  const autenticacao = await AutenticaAlloyal();
+   
+   if (!autenticacao) {
+     console.error('Falha ao obter token e email de autenticação!');
+     return;
+   }
+ 
+   const {token, email} = autenticacao;
+ 
+ 
+   const options = {
+     method: 'DELETE',
+     url: `https://api.lecupon.com/client/v2/businesses/${businessId}/authorized_users/${cpf}`,
+     headers: {
+       accept: 'application/json',
+       'X-ClientEmployee-Token': token,
+       'X-ClientEmployee-Email': email,
+       'X-Session-Token': '37L8*PsXaa'
+     }
+   };
+ 
+   try {
+     const response = await axios.request(options);
+     console.log('Usuário inativado com sucesso na Alloyal:', response.data);
+     return response.data;
+   } catch (error) {
+     console.error('Erro ao inativar usuário na Alloyal:', error.message);
+     //throw error;
+   }
 }
 
 async function AtivaUsuarioAlloyal(cpf) {
   const autenticacao = await AutenticaAlloyal();
-  
+
   if (!autenticacao) {
     console.error('Falha ao obter token e email de autenticação!');
     return;
   }
 
-  const {token, email} = autenticacao;
+  const { token, email } = autenticacao;
 
   const options = {
     method: 'PATCH',
@@ -120,9 +122,10 @@ async function AtivaUsuarioAlloyal(cpf) {
     headers: {
       accept: 'application/json',
       'X-ClientEmployee-Token': token,
-      'X-ClientEmployee-Email': email
+      'X-ClientEmployee-Email': email,
+      'X-Session-Token': '37L8*PsXaa'
     },
-    data: {active: 'true'}
+    data: { active: 'true' }
   };
 
   try {
@@ -136,4 +139,4 @@ async function AtivaUsuarioAlloyal(cpf) {
 
 }
 
-module.exports = {CriarUsuarioAlloyal, InativaUsuarioAlloyal, AtivaUsuarioAlloyal}
+module.exports = { CriarUsuarioAlloyal, InativaUsuarioAlloyal, AtivaUsuarioAlloyal }
