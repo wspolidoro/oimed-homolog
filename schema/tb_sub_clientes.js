@@ -1,7 +1,8 @@
 const Sequelize = require('sequelize');
 const { sequelize, sandbox } = require('../db');
+const Franqueado = require('./tb_franqueado');
 
-const Franqueado = sequelize.define('oi_franqueado', {
+const SubClientes = sequelize.define('oi_sub_clientes', {
     id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -9,7 +10,7 @@ const Franqueado = sequelize.define('oi_franqueado', {
         primaryKey: true
     },
 
-    nome: {
+    nm_cliente: {
         type: Sequelize.STRING(150),
         allowNull: false,
         unique: false,
@@ -20,7 +21,18 @@ const Franqueado = sequelize.define('oi_franqueado', {
         }
     },
 
-    cpf: {
+    nu_documento: {
+        type: Sequelize.STRING(150),
+        allowNull: false,
+        unique: true,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
+    },
+
+    birthday: {
         type: Sequelize.STRING(150),
         allowNull: false,
         unique: false,
@@ -53,7 +65,7 @@ const Franqueado = sequelize.define('oi_franqueado', {
         }
     },
 
-    password: {
+    zip_code: {
         type: Sequelize.STRING(150),
         allowNull: false,
         unique: false,
@@ -64,7 +76,7 @@ const Franqueado = sequelize.define('oi_franqueado', {
         }
     },
 
-    total_clientes: {
+    address: {
         type: Sequelize.STRING(150),
         allowNull: false,
         unique: false,
@@ -75,7 +87,7 @@ const Franqueado = sequelize.define('oi_franqueado', {
         }
     },
 
-    vendas: {
+    city: {
         type: Sequelize.STRING(150),
         allowNull: false,
         unique: false,
@@ -86,7 +98,7 @@ const Franqueado = sequelize.define('oi_franqueado', {
         }
     },
 
-    dado_banc: {
+    state: {
         type: Sequelize.STRING(150),
         allowNull: false,
         unique: false,
@@ -97,7 +109,7 @@ const Franqueado = sequelize.define('oi_franqueado', {
         }
     },
 
-    dado_pix: {
+    paymentType: {
         type: Sequelize.STRING(150),
         allowNull: false,
         unique: false,
@@ -108,7 +120,127 @@ const Franqueado = sequelize.define('oi_franqueado', {
         }
     },
 
-    site_venda: {
+    serviceType: {
+        type: Sequelize.STRING(150),
+        allowNull: false,
+        unique: false,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
+    },
+
+    dt_venda: {
+        type: Sequelize.STRING(150),
+        allowNull: false,
+        unique: false,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
+    },
+
+    situacao: {
+        type: Sequelize.STRING(150),
+        allowNull: false,
+        unique: false,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
+    },
+
+    nu_parcelas: {
+        type: Sequelize.STRING(150),
+        allowNull: false,
+        unique: false,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
+    },
+
+    vl_venda: {
+        type: Sequelize.STRING(150),
+        allowNull: false,
+        unique: false,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
+    },
+    vl_venda: {
+        type: Sequelize.STRING(150),
+        allowNull: false,
+        unique: false,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
+    },
+
+    dt_cobranca: {
+        type: Sequelize.STRING(150),
+        allowNull: false,
+        unique: false,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
+    },
+
+    dt_vencimento: {
+        type: Sequelize.STRING(150),
+        allowNull: false,
+        unique: false,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
+    },
+
+    dt_pagamento: {
+        type: Sequelize.STRING(150),
+        allowNull: false,
+        unique: false,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
+    },
+
+    link: {
+        type: Sequelize.STRING(150),
+        allowNull: false,
+        unique: false,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
+    },
+
+    beneficiarios: {
+        type: Sequelize.TEXT,
+        allowNull: false,
+        unique: false,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
+    },
+
+    id_franqueado: {
         type: Sequelize.STRING(150),
         allowNull: false,
         unique: false,
@@ -119,20 +251,8 @@ const Franqueado = sequelize.define('oi_franqueado', {
         }
     },
     
-    siteTitle: {
-        type: Sequelize.STRING(255),
-        allowNull: true,
-        unique: false
-    },
-    
-    siteEmail: {
-        type: Sequelize.STRING(255),
-        allowNull: true,
-        unique: false
-    },
-
-    status: {
-        type: Sequelize.STRING(150),
+    cpf_titular: {
+        type: Sequelize.STRING(11),
         allowNull: false,
         unique: false,
         validate: {
@@ -142,57 +262,30 @@ const Franqueado = sequelize.define('oi_franqueado', {
         }
     },
 
-    perfil: {
-        type: Sequelize.STRING(150),
-        allowNull: false,
-        unique: false,
-        validate: {
-            notEmpty: {
-                msg: "Esse campo não pode está vazio.."
-            },
-        }
-    },
-
-    products: {
-        type: Sequelize.STRING(150),
-        allowNull: false,
-        unique: false,
-        validate: {
-            notEmpty: {
-                msg: "Esse campo não pode está vazio.."
-            },
-        }
-    },
-
-    linkAndroid: {
-        type: Sequelize.STRING(255),
+    dtAtivacao: {
+        type: Sequelize.DATE,
         allowNull: true,
-        unique: false
+        defaultValue: Sequelize.NOW
     },
 
-    linkApple: {
-        type: Sequelize.STRING(255),
+    dtDesativacao: {
+        type: Sequelize.DATE,
         allowNull: true,
-        unique: false
+        defaultValue: Sequelize.NOW
     },
 
-    tokenAsaas: {
-        type: Sequelize.STRING(255),
+    reminderSent: {
+        type: Sequelize.BOOLEAN,
         allowNull: true,
-        unique: false
-    },
-
-    subPaineis: {
-        type: Sequelize.BOOLEAN(),
-        allowNull: false,
-        unique: false,
-        /* validate: {
-            notEmpty: {
-                msg: "Esse campo não pode está vazio.."
-            },
-        } */
+        defaultValue: Sequelize.NOW
     }
 
 });
 
-module.exports = Franqueado;
+SubClientes.belongsTo(Franqueado, {
+    constraints: true,
+    foreignKey: 'id_franqueado',
+    targetKey: 'id'
+});
+
+module.exports = SubClientes;

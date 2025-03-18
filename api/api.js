@@ -79,44 +79,44 @@ const credentials = [
         api_key: "aqmedkey",
         secret_key: "aqc95094bf6d23f6946f42cd7bd2eda5df282d1b258c94d3eef8411a371df4d0079e4887a32d21ed63c84a5b"
     }*/
-    
+
 
 ]
 
 routerApi.post('/auth', (req, res) => {
-    try{
-       
-           var { api_key, secret_key } = req.body;
-    let credentialKey = credentials.find(i => i.api_key == api_key);
-    console.log(api_key)
+    try {
 
-    if (credentialKey != undefined) {
-        if (credentialKey.secret_key == secret_key) {
+        var { api_key, secret_key } = req.body;
+        let credentialKey = credentials.find(i => i.api_key == api_key);
+        console.log('api', api_key)
 
-            jwt.sign({ id: credentialKey.id, user: credentialKey.nome }, secretKey, { expiresIn: '60s' }, (err, token) => {
-                if (err) {
-                    res.status(400);
-                    res.json({ err: "falha interna" });
-                } else {
-                    if (req.query.login == "true") {
-                        res.json({ queryParam: "chave", token: token });
+        if (credentialKey != undefined) {
+            if (credentialKey.secret_key == secret_key) {
+
+                jwt.sign({ id: credentialKey.id, user: credentialKey.nome }, secretKey, { expiresIn: '60s' }, (err, token) => {
+                    if (err) {
+                        res.status(400);
+                        res.json({ err: "falha interna" });
                     } else {
-                        res.status(200);
-                        res.json({ token: token });
+                        if (req.query.login == "true") {
+                            res.json({ queryParam: "chave", token: token });
+                        } else {
+                            res.status(200);
+                            res.json({ token: token });
+                        }
                     }
-                }
-            });
+                });
 
+            } else {
+                res.status(401);
+                res.json({ err: "Credenciais inválidas" });
+            }
         } else {
-            res.status(401);
-            res.json({ err: "Credenciais inválidas" });
+            res.status(404);
+            res.json({ err: "os dados enviados não existe" });
         }
-    } else {
-        res.status(404);
-        res.json({ err: "os dados enviados não existe" });
-    }
-        
-    }catch(err) {
+
+    } catch (err) {
         console.log("erro na autenticação", err)
         res.status(400);
         res.json({ err: "falha interna" });
@@ -203,44 +203,44 @@ routerApi.delete('/beneficiaries/inactivate/:cpf', auth, async (req, res) => {
 //reativar vida
 routerApi.put('/beneficiaries/reactivate/:cpf', auth, async (req, res) => {
     try {
-            const cpfinformed = req.params.cpf;
+        const cpfinformed = req.params.cpf;
 
-    const uuidGet = await Rapidoc.findAll({
-        where: {
-            cpf: cpfinformed
-        }
-    })
-
-
-    if (uuidGet.length >= 1) {
-        console.log(uuidGet.length)
-        const uuid = uuidGet[0].uuid;
-        const retorno = await axios.put(`https://api.rapidoc.tech/tema/api/beneficiaries/${uuid}/reactivate`, "data", {
-            headers: {
-                'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
-                'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
-                'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+        const uuidGet = await Rapidoc.findAll({
+            where: {
+                cpf: cpfinformed
             }
-        });
+        })
 
-        if (retorno.data.success === true) {
 
-            const inativar = await Clientes.update({
-                situacao: "ativo",
-            }, {
-                where: {
-                    nu_documento: cpfinformed,
+        if (uuidGet.length >= 1) {
+            console.log(uuidGet.length)
+            const uuid = uuidGet[0].uuid;
+            const retorno = await axios.put(`https://api.rapidoc.tech/tema/api/beneficiaries/${uuid}/reactivate`, "data", {
+                headers: {
+                    'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
+                    'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
+                    'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
                 }
             });
 
-            res.json(retorno.data)
+            if (retorno.data.success === true) {
+
+                const inativar = await Clientes.update({
+                    situacao: "ativo",
+                }, {
+                    where: {
+                        nu_documento: cpfinformed,
+                    }
+                });
+
+                res.json(retorno.data)
+            } else {
+                res.json(retorno.data)
+            }
         } else {
-            res.json(retorno.data)
+            res.json({ success: false, message: "usuario não encontrado" });
         }
-    } else {
-        res.json({ success: false, message: "usuario não encontrado" });
-    }
-    } catch(err) {console.log("caminho do erro: api.js linha 191")}
+    } catch (err) { console.log("caminho do erro: api.js linha 191") }
 });
 
 ///ativar vida manualmente via painel oimed
@@ -412,6 +412,124 @@ routerApi.get('/consulta/oimed/:cpf', auth, async (req, res) => {
     res.json(response.data);
 });
 
+//rota para reservar dependente
+routerApi.post('/beneficiaries/dependente', auth, async (req, res) => {
+    console.log('%cteste', 'background-color: red', req.body)
+    criarDependenteGeral()
+
+    async function criarDependenteGeral() {
+        const arrayDefault = '[{"nm_cliente1":null,"nu_documento1":null,"birthday1":null,"email1":null,"telefone1":null,"zipCode1":null,"address1":null,"city1":null,"state1":null},{"nm_cliente2":null,"nu_documento2":null,"birthday2":null,"email2":null,"telefone2":null,"zipCode2":null,"address2":null,"city2":null,"state2":null},{"nm_cliente3":null,"nu_documento3":null,"birthday3":null,"email3":null,"telefone3":null,"zipCode3":null,"address3":null,"city3":null,"state3":null}]';
+
+        const {
+            nm_cliente,
+            nu_documento,
+            birthday,
+            telefone,
+            email,
+            zip_code,
+            address,
+            city,
+            state,
+            paymentType,
+            serviceType,
+            cpfTitular
+        } = req.body;
+
+        if (!cpfTitular || cpfTitular === "string") {
+            return res.json({ success: false, message: "titular não informado" });
+        }
+
+
+        const clientes = await Clientes.findAll({
+            where: { nu_documento: cpfTitular },
+            raw: true,
+            attributes: ['nm_cliente', 'id_franqueado', 'paymentType', 'serviceType']
+        });
+
+        console.log('cliente: ', clientes)
+
+        if (clientes.length < 1) {
+            return res.json({ success: false, message: "titular não cadastrado" });
+        }
+
+
+        const newBeneficiario = await Clientes.create({
+            nm_cliente: nm_cliente,
+            nu_documento: nu_documento,
+            birthday: birthday,
+            telefone: telefone,
+            email: email,
+            zip_code: zip_code,
+            address: address,
+            city: city,
+            state: state,
+            dt_venda: "default",
+            situacao: "Pendente",
+            nu_parcelas: "default",
+            vl_venda: "default",
+            dt_cobranca: "default",
+            dt_vencimento: "default",
+            dt_pagamento: "default",
+            par_atual: "default",
+            paymentType: clientes[0].paymentType,
+            serviceType: clientes[0].serviceType,
+            link: "default",
+            beneficiarios: arrayDefault,
+            id_franqueado: clientes[0].id_franqueado,
+            cpf_titular: cpfTitular
+        });
+
+
+        res.json({ success: true, message: "criado com sucesso" });
+
+        
+    };
+})
+
+//rota para editar clientes
+routerApi.put('/beneficiaries/edit/:cpf', auth, async (req, res) => {
+    const nuDoc = req.params.cpf; 
+    console.log('%cteste', 'background-color: red', req.params.nuDoc)
+
+   
+        const arrayDefault = '[{"nm_cliente1":null,"nu_documento1":null,"birthday1":null,"email1":null,"telefone1":null,"zipCode1":null,"address1":null,"city1":null,"state1":null},{"nm_cliente2":null,"nu_documento2":null,"birthday2":null,"email2":null,"telefone2":null,"zipCode2":null,"address2":null,"city2":null,"state2":null},{"nm_cliente3":null,"nu_documento3":null,"birthday3":null,"email3":null,"telefone3":null,"zipCode3":null,"address3":null,"city3":null,"state3":null}]';
+
+        const {
+            nm_cliente,
+            nu_documento,
+            birthday,
+            telefone,
+            email,
+            zip_code,
+            address,
+            city,
+            state
+        } = req.body;
+
+        if (!nuDoc || nuDoc === "string") {
+            return res.json({ success: false, message: "titular não informado" });
+        }
+
+
+        const atualiazarBeneficiario = await Clientes.update(req.body,
+        {
+            where: { nu_documento: nuDoc }
+        });
+
+        console.log("very: ", atualiazarBeneficiario)
+
+        if(atualiazarBeneficiario[0] == 1) {
+            res.json({ success: true, message: "atualizado com sucesso" });
+        } else {
+            res.json({ success: false, message: "falha na atualização, o cpf informado não existe" });
+        }
+
+        
+
+        
+    
+})
+
 //consultar por cpf na rapidoc e gerar link de consulta
 routerApi.get('/atendimento/oimed/:cpf', auth, async (req, res) => {
     const response = await axios.get(`https://api.rapidoc.tech/tema/api/beneficiaries/${req.params.cpf}`, {
@@ -422,7 +540,7 @@ routerApi.get('/atendimento/oimed/:cpf', auth, async (req, res) => {
         }
     });
 
-//console.log("teste", response.data)
+    //console.log("teste", response.data)
 
 
     if (response.data.success) {
@@ -539,7 +657,7 @@ routerApi.post('/franqueado/clientes', async (req, res) => {
             link: "https://www.testesapi.com",
             beneficiarios: '[{ "nm_cliente1": null, "nu_documento1": null, "birthday1": null, "email1": null, "telefone1": null, "zipCode1": null, "address1": null, "city1": null, "state1": null }, { "nm_cliente2": null, "nu_documento2": null, "birthday2": null, "email2": null, "telefone2": null, "zipCode2": null, "address2": null, "city2": null, "state2": null }, { "nm_cliente3": null, "nu_documento3": null, "birthday3": null, "email3": null, "telefone3": null, "zipCode3": null, "address3": null, "city3": null, "state3": null }]',
             id_franqueado: 2,
-            cpf_titular: req.body.cpfTitular
+            cpf_titular: "titular"
         });
 
 

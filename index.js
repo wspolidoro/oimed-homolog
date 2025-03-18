@@ -37,8 +37,8 @@ app.get('/mailerr', async(req, res) => {
 
 });
 
-app.use('/api/api', routerApi);
-app.use('/api/sandbox', routerSandbox);
+app.use('/api', routerApi);
+app.use('/sandbox', routerSandbox);
 
 
 app.listen(port, () => { // Listen on port 3000 

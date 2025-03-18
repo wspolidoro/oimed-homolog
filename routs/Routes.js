@@ -16,11 +16,14 @@ const { sendMailError, mailerNewCadastro } = require('./sendMailer.js');
 const Franqueado = require('../schema/tb_franqueado');
 const Clientes = require('../schema/tb_clientes');
 const Rapidoc = require('../schema/tb_rapidoc');
+const SubFranqueado = require('../schema/tb_sub_franqueado');
+const SubClientes = require('../schema/tb_sub_clientes.js');
 
 //controllers
 const cadastroNewForm = require('../controllers/cadastroClientes/cadastroNewForm');
 const paymentReminder = require('../controllers/telemedicinaActions/notifications.js');
 const loginWordpress = require('../controllers/login/loginForWp.js');
+const sub_franqueados = require('../controllers/sub_franqueados/crud.js');
 const { webhookActivate } = require('../controllers/auto_ativacao/webhook.js');
 
 
@@ -125,7 +128,7 @@ router.post('/auth', async (req, res) => {
       if (user != undefined) {
         if (user.password == password) {
 
-          jwt.sign({ id: user.id, email: user.email }, secretKey, { expiresIn: '2h' }, (err, token) => {
+          jwt.sign({ id: user.id, email: user.email, role: user.subPaineis }, secretKey, { expiresIn: '2h' }, (err, token) => {
             if (err) {
               res.status(400);
               res.json({ success: false, message: "Falha interna..." })
@@ -352,7 +355,7 @@ router.post('/cadastrar/clientes/newform', cadastroNewForm.cadastrarVida);
 router.post('/wp/login', loginWordpress.loginWp);
 
 
-//rota de testes para reservar clientes
+//rota para reservar clientes
 router.post('/franqueado/clientes', async (req, res) => {
   try {
     await sequelize.sync();
@@ -825,7 +828,14 @@ router.post('/franqueado/listunique', async (req, res) => {
 
 //buscar lista de clientes
 router.post('/franqueado/clientes/list', async (req, res) => {
-  if (req.body.perfil == "guest") {
+  console.log("kledisom", req.body.subpainel, typeof(req.query.subList), null)
+  if(req.body.subpainel && req.query.subList !== "null") {
+    const nmClientes = await SubClientes.findAll({
+      where: { id_franqueado: req.body.id }
+    });
+
+    return res.send(nmClientes);
+  } else if (req.body.perfil == "guest") {
     const nmClientes = await Clientes.findAll({
       where: { id_franqueado: req.body.id }
     });
@@ -835,7 +845,7 @@ router.post('/franqueado/clientes/list', async (req, res) => {
     const Cliente = await Clientes.findAll();
 
     res.json(Cliente);
-  }
+  } 
 
 
 });
@@ -859,7 +869,14 @@ router.get('/buscar/cliente/:id', async (req, res) => {
       }
     });
 
-    res.json({ success: true, message: cliente })
+    const dependentes = await Clientes.findAll({
+      where: {
+        cpf_titular: cliente[0].dataValues.nu_documento
+      }
+    });
+    //console.log(cliente[0].dataValues.nu_documento)
+
+    res.json({ success: true, message: cliente, dependentes: dependentes })
   }
 
   /* res.json(linkFranqueado[0].link) */
@@ -1691,6 +1708,11 @@ async function countClients() {
 //Payment reminder
 router.get('/payment/reminder/7', paymentReminder.paymentReminder7);
 router.get('/payment/reminder/1', paymentReminder.paymentReminder1);
+
+//SUBPAINEIS
+router.post('/subpainel/create', sub_franqueados.create);
+router.get('/subpainel/read', sub_franqueados.read);
+router.post('/subpainel/create/clientes', sub_franqueados.createClientes);
 
 
 module.exports = router;

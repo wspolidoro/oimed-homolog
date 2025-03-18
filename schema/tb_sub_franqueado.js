@@ -1,7 +1,7 @@
 const Sequelize = require('sequelize');
 const { sequelize, sandbox } = require('../db');
 
-const Franqueado = sequelize.define('oi_franqueado', {
+const SubFranqueado = sequelize.define('oi_sub_franqueado', {
     id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -155,13 +155,8 @@ const Franqueado = sequelize.define('oi_franqueado', {
 
     products: {
         type: Sequelize.STRING(150),
-        allowNull: false,
-        unique: false,
-        validate: {
-            notEmpty: {
-                msg: "Esse campo não pode está vazio.."
-            },
-        }
+        allowNull: true,
+        unique: false
     },
 
     linkAndroid: {
@@ -195,4 +190,4 @@ const Franqueado = sequelize.define('oi_franqueado', {
 
 });
 
-module.exports = Franqueado;
+module.exports = SubFranqueado;
