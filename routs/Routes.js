@@ -415,7 +415,7 @@ router.post('/franqueado/clientes', async (req, res) => {
     });
 
 
-    if(idFranqueado === 74) {
+    if(idFranqueado == 74) {
       let sending = await mailerNewCadastroConnectVitta(dataFranqueado[0].dataValues, emaildestino);
     } else {
       let sending = await mailerNewCadastro(dataFranqueado[0].dataValues, emaildestino); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
