@@ -10,7 +10,7 @@ const { faker } = require('@faker-js/faker');
 const mailer = require('./sendMailer');
 
 //DEBBUG
-const { sendMailError, mailerNewCadastro } = require('./sendMailer.js');
+const { sendMailError, mailerNewCadastro, mailerNewCadastroConnectVitta } = require('./sendMailer.js');
 
 //SCHEMAS
 const Franqueado = require('../schema/tb_franqueado');
@@ -122,6 +122,7 @@ router.post('/auth', async (req, res) => {
       //res.json(linkFranqueado);
 
       var user = linkFranqueado.find(u => u.email == email);
+
 
       //res.json(user);
 
@@ -414,7 +415,12 @@ router.post('/franqueado/clientes', async (req, res) => {
     });
 
 
-    let sending = await mailerNewCadastro(dataFranqueado[0].dataValues, emaildestino); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
+    if(idFranqueado === 74) {
+      let sending = await mailerNewCadastroConnectVitta(dataFranqueado[0].dataValues, emaildestino);
+    } else {
+      let sending = await mailerNewCadastro(dataFranqueado[0].dataValues, emaildestino); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
+
+    }
 
 
     const arrayDefault = '[{"nm_cliente1":null,"nu_documento1":null,"birthday1":null,"email1":null,"telefone1":null,"zipCode1":null,"address1":null,"city1":null,"state1":null},{"nm_cliente2":null,"nu_documento2":null,"birthday2":null,"email2":null,"telefone2":null,"zipCode2":null,"address2":null,"city2":null,"state2":null},{"nm_cliente3":null,"nu_documento3":null,"birthday3":null,"email3":null,"telefone3":null,"zipCode3":null,"address3":null,"city3":null,"state3":null}]';
