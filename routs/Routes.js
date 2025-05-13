@@ -24,6 +24,8 @@ const cadastroNewForm = require('../controllers/cadastroClientes/cadastroNewForm
 const paymentReminder = require('../controllers/telemedicinaActions/notifications.js');
 const loginWordpress = require('../controllers/login/loginForWp.js');
 const sub_franqueados = require('../controllers/sub_franqueados/crud.js');
+const yampi = require('../controllers/yampi/index.js');
+const faturamento = require('../controllers/faturamento/index.js');
 const { webhookActivate } = require('../controllers/auto_ativacao/webhook.js');
 
 
@@ -129,7 +131,7 @@ router.post('/auth', async (req, res) => {
       if (user != undefined) {
         if (user.password == password) {
 
-          jwt.sign({ id: user.id, email: user.email, role: user.subPaineis }, secretKey, { expiresIn: '2h' }, (err, token) => {
+          jwt.sign({ id: user.id, email: user.email, role: user.subPaineis, autoridade: user.autoridade }, secretKey, { expiresIn: '2h' }, (err, token) => {
             if (err) {
               res.status(400);
               res.json({ success: false, message: "Falha interna..." })
@@ -1719,6 +1721,13 @@ router.get('/payment/reminder/1', paymentReminder.paymentReminder1);
 router.post('/subpainel/create', sub_franqueados.create);
 router.get('/subpainel/read', sub_franqueados.read);
 router.post('/subpainel/create/clientes', sub_franqueados.createClientes);
+
+//ORDERs YAMPI
+router.get('/payment/status/conectamed/:cpf', yampi.listOrder);
+
+//FATURAMENTO
+router.get('/list/parceiros', faturamento.listParceiros);
+router.get('/list/clientes/:id', faturamento.listDados);
 
 
 module.exports = router;

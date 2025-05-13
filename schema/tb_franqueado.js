@@ -191,6 +191,12 @@ const Franqueado = sequelize.define('oi_franqueado', {
                 msg: "Esse campo não pode está vazio.."
             },
         } */
+    },
+
+    autoridade: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        unique: false
     }
 
 });

@@ -240,6 +240,11 @@ const Clientes = sequelize.define('oi_clientes', {
         }
     },
 
+    cobertura: {
+        type: Sequelize.TEXT,
+        allowNull: true
+    },
+
     id_franqueado: {
         type: Sequelize.STRING(150),
         allowNull: false,
