@@ -22,17 +22,18 @@ module.exports = {
             where: {
                 id_franqueado: req.params.id,
                 cobertura: "individual",
-                situacao: "ativo"
+                //situacao: "ativo"
             },
-            attributes: ['id', 'nm_cliente', 'serviceType', 'dtDesativacao', 'cobertura'],
+            attributes: ['id', 'nm_cliente', 'serviceType', 'dtDesativacao', 'cobertura', 'situacao'],
             raw: true
         });
+        
 
-        const qtdaG = listClientes.filter(item => item.serviceType === "G").length;
-        const qtdaP = listClientes.filter(item => item.serviceType === "P").length;
-        const qtdaGP = listClientes.filter(item => item.serviceType === "GP").length;
-        const qtdaGS = listClientes.filter(item => item.serviceType === "GS").length;
-        const qtdaGSP = listClientes.filter(item => item.serviceType === "GSP").length;
+        const qtdaG = listClientes.filter(item => item.serviceType === "G" && item.situacao === "ativo").length;
+        const qtdaP = listClientes.filter(item => item.serviceType === "P" && item.situacao === "ativo").length;
+        const qtdaGP = listClientes.filter(item => item.serviceType === "GP" && item.situacao === "ativo").length;
+        const qtdaGS = listClientes.filter(item => item.serviceType === "GS" && item.situacao === "ativo").length;
+        const qtdaGSP = listClientes.filter(item => item.serviceType === "GSP" && item.situacao === "ativo").length;
 
         const countPlans = {
             G: qtdaG,
@@ -59,7 +60,7 @@ module.exports = {
             const mesmoMes = data.getUTCFullYear() === hoje.getUTCFullYear() &&
                 data.getUTCMonth() === hoje.getUTCMonth();
 
-            // console.log(mesmoMes)
+            console.log(mesmoMes)
             return mesmoMes;
 
         })
@@ -69,17 +70,17 @@ module.exports = {
             where: {
                 id_franqueado: req.params.id,
                 cobertura: "familiar",
-                situacao: "ativo"
+                //situacao: "ativo"
             },
-            attributes: ['id', 'nm_cliente', 'serviceType', 'dtDesativacao', 'cobertura'],
+            attributes: ['id', 'nm_cliente', 'serviceType', 'dtDesativacao', 'cobertura', 'situacao'],
             raw: true
         });
 
-        const qtdaGFamiliar = listClientesFamiliar.filter(item => item.serviceType === "G").length;
-        const qtdaPFamiliar = listClientesFamiliar.filter(item => item.serviceType === "P").length;
-        const qtdaGPFamiliar = listClientesFamiliar.filter(item => item.serviceType === "GP").length;
-        const qtdaGSFamiliar = listClientesFamiliar.filter(item => item.serviceType === "GS").length;
-        const qtdaGSPFamiliar = listClientesFamiliar.filter(item => item.serviceType === "GSP").length;
+        const qtdaGFamiliar = listClientesFamiliar.filter(item => item.serviceType === "G" && item.situacao === "ativo").length;
+        const qtdaPFamiliar = listClientesFamiliar.filter(item => item.serviceType === "P" && item.situacao === "ativo").length;
+        const qtdaGPFamiliar = listClientesFamiliar.filter(item => item.serviceType === "GP" && item.situacao === "ativo").length;
+        const qtdaGSFamiliar = listClientesFamiliar.filter(item => item.serviceType === "GS" && item.situacao === "ativo").length;
+        const qtdaGSPFamiliar = listClientesFamiliar.filter(item => item.serviceType === "GSP" && item.situacao === "ativo").length;
 
         const countPlansFamiliar = {
             G: qtdaGFamiliar,
@@ -114,7 +115,7 @@ module.exports = {
         })
 
 
-        console.log(currentDeactivate.length)
+        console.log("insou",currentDeactivate)
 
         res.json({
             succes: true,
