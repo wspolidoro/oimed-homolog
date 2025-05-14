@@ -54,6 +54,8 @@ module.exports = {
 
         const currentDeactivate = listClientes.filter(item => {
 
+            if(item.situacao === "ativo") return;
+
             const data = new Date(item.dtDesativacao);
             const hoje = new Date();
 
@@ -103,6 +105,8 @@ module.exports = {
 
         const currentDeactivateFamiliar = listClientesFamiliar.filter(item => {
 
+            if(item.situacao === "ativo") return;
+
             const data = new Date(item.dtDesativacao);
             const hoje = new Date();
 
@@ -117,9 +121,10 @@ module.exports = {
 
         console.log("insou",currentDeactivate)
 
+
         res.json({
             succes: true,
-            individualPlan: { qtdaPlans: countPlans, totalRegister: calcTotal, totalInativates: currentDeactivate.length },
+            individualPlan: { qtdaPlans: countPlans, totalRegister: calcTotal, totalInativates: currentDeactivate },
             familiarPlan: { qtdaPlans: countPlansFamiliar, totalRegister: calcTotalFamiliar, totalInativates: currentDeactivateFamiliar.length }
         });
 
