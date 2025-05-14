@@ -21,7 +21,8 @@ module.exports = {
         const listClientes = await Clientes.findAll({
             where: {
                 id_franqueado: req.params.id,
-                cobertura: "individual"
+                cobertura: "individual",
+                situacao: "ativo"
             },
             attributes: ['id', 'nm_cliente', 'serviceType', 'dtDesativacao', 'cobertura'],
             raw: true
@@ -67,7 +68,8 @@ module.exports = {
         const listClientesFamiliar = await Clientes.findAll({
             where: {
                 id_franqueado: req.params.id,
-                cobertura: "familiar"
+                cobertura: "familiar",
+                situacao: "ativo"
             },
             attributes: ['id', 'nm_cliente', 'serviceType', 'dtDesativacao', 'cobertura'],
             raw: true
