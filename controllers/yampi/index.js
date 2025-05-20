@@ -30,6 +30,21 @@ module.exports = {
         try {
             const response = await fetch(url, options);
             const data = await response.json();
+
+            let definirStatus = (statusCod) => {
+                if(statusCod == 1) return "Pendente";
+                if(statusCod == 3) return "Pago";
+                if(statusCod == 4) return "Cancelado";
+            }
+
+            const nome = data.order.customer.first_name + " " + data.order.customer.last_name;
+            const valor = data.order.subtotal_price;
+            const dataPagamento = data.order.payment.updated_at;
+            const status = definirStatus(data.order.payment.status_id);
+            const metodoPagamento = data.order.payment.payment_type;
+
+            //console.log(nome, valor, dataPagamento, status, metodoPagamento)
+
             res.json({success: true, data: data.order})
         } catch (error) {
             console.error(error);
