@@ -37,15 +37,17 @@ module.exports = {
                 if(statusCod == 4) return "Cancelado";
             }
 
-            const nome = data.order.customer.first_name + " " + data.order.customer.last_name;
-            const valor = data.order.subtotal_price;
-            const dataPagamento = data.order.payment.updated_at;
-            const status = definirStatus(data.order.payment.status_id);
-            const metodoPagamento = data.order.payment.payment_type;
+            const obj = {
+                 nome: data.order.customer.first_name + " " + data.order.customer.last_name,
+                 valor: data.order.subtotal_price,
+                 dataPagamento: data.order.payment.updated_at,
+                 status: definirStatus(data.order.payment.status_id),
+                 metodoPagamento: data.order.payment.payment_type
+            }
 
-            //console.log(nome, valor, dataPagamento, status, metodoPagamento)
+            //console.log({nome: nome, valor: valor, dataPagamento: dataPagamento, status: status, metodoPagamento: metodoPagamento})
 
-            res.json({success: true, data: data.order})
+            res.json({success: true, data: obj})
         } catch (error) {
             console.error(error);
         }
