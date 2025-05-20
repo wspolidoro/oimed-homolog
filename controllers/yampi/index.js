@@ -37,10 +37,12 @@ module.exports = {
                 if(statusCod == 4) return "Cancelado";
             }
 
+            let dividirdata = data.order.payment.updated_at;
+
             const obj = {
                  nome: data.order.customer.first_name + " " + data.order.customer.last_name,
                  valor: data.order.subtotal_price,
-                 dataPagamento: data.order.payment.updated_at,
+                 dataPagamento: dividirdata.split("T")[0],
                  status: definirStatus(data.order.payment.status_id),
                  metodoPagamento: data.order.payment.payment_type
             }
