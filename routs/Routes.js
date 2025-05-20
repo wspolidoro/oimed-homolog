@@ -1723,7 +1723,8 @@ router.get('/subpainel/read', sub_franqueados.read);
 router.post('/subpainel/create/clientes', sub_franqueados.createClientes);
 
 //ORDERs YAMPI
-router.get('/payment/status/conectamed/:cpf', yampi.listOrder);
+router.get('/conectamed/order/:cpf', yampi.listOrder);
+router.post('/conectamed/notification', yampi.webhook);
 
 //FATURAMENTO
 router.get('/list/parceiros', faturamento.listParceiros);
