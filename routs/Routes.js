@@ -317,7 +317,9 @@ router.post('/franqueado', async (req, res) => {
       site_venda: req.body.site_url,
       status: 'ativo',
       perfil: 'guest',
-      products: req.body.products
+      products: req.body.products,
+      subPaineis: 0,
+      autoridade: 3
     });
 
     //console.log(req.body) 
@@ -417,7 +419,7 @@ router.post('/franqueado/clientes', async (req, res) => {
     });
 
 
-    if(idFranqueado == 74) {
+    if (idFranqueado == 74) {
       let sending = await mailerNewCadastroConnectVitta(dataFranqueado[0].dataValues, emaildestino);
     } else {
       let sending = await mailerNewCadastro(dataFranqueado[0].dataValues, emaildestino); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
@@ -836,8 +838,8 @@ router.post('/franqueado/listunique', async (req, res) => {
 
 //buscar lista de clientes
 router.post('/franqueado/clientes/list', async (req, res) => {
-  console.log("kledisom", req.body.subpainel, typeof(req.query.subList), null)
-  if(req.body.subpainel && req.query.subList !== "null") {
+  console.log("kledisom", req.body.subpainel, typeof (req.query.subList), null)
+  if (req.body.subpainel && req.query.subList !== "null") {
     const nmClientes = await SubClientes.findAll({
       where: { id_franqueado: req.body.id }
     });
@@ -853,7 +855,7 @@ router.post('/franqueado/clientes/list', async (req, res) => {
     const Cliente = await Clientes.findAll();
 
     res.json(Cliente);
-  } 
+  }
 
 
 });
