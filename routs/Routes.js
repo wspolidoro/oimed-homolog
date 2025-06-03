@@ -1346,64 +1346,68 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
   //console.log(dataArr[0].birthday1)
   //try {
 
-  if (dataArr[0].nu_documento1 != null) {
-    console.log("testando")
-    const data = dataArr[0].birthday1.split('/');
-    const birthdayFormat1 = data ? data : null;
+  if (dataArr.length > 0) {
+    if (dataArr[0].nu_documento1 != null) {
+      console.log("testando")
+      const data = dataArr[0].birthday1.split('/');
+      const birthdayFormat1 = data ? data : null;
 
-    console.log("teste da data", dataArr[0].nu_documento1)
+      console.log("teste da data", dataArr[0].nu_documento1)
 
-    const dep1 = {
-      "name": dataArr[0].nm_cliente1,
-      "cpf": dataArr[0].nu_documento1,
-      "birthday": `${birthdayFormat1[2]}-${birthdayFormat1[1]}-${birthdayFormat1[0]}`,
-      "phone": dataArr[0].telefone1,
-      "email": dataArr[0].email1,
-      "zipCode": dataArr[0].zipCode1,
-      "address": dataArr[0].address1,
-      "city": dataArr[0].city1,
-      "state": dataArr[0].state1.length <= 2 ? dataArr[0].state1 : dataArr[0].state1.substr(dataArr[0].state1.length - 3, 2),
-      "holder": cliente[0].nu_documento
+      const dep1 = {
+        "name": dataArr[0].nm_cliente1,
+        "cpf": dataArr[0].nu_documento1,
+        "birthday": `${birthdayFormat1[2]}-${birthdayFormat1[1]}-${birthdayFormat1[0]}`,
+        "phone": dataArr[0].telefone1,
+        "email": dataArr[0].email1,
+        "zipCode": dataArr[0].zipCode1,
+        "address": dataArr[0].address1,
+        "city": dataArr[0].city1,
+        "state": dataArr[0].state1.length <= 2 ? dataArr[0].state1 : dataArr[0].state1.substr(dataArr[0].state1.length - 3, 2),
+        "holder": cliente[0].nu_documento
+      }
+
+      arrBD.push(dep1);
+    } else if (dataArr[1].nu_documento2 != null) {
+      const data = dataArr[1].birthday1.split('/');
+      const birthdayFormat2 = data ? data : null;
+
+      const dep2 = {
+        "name": dataArr[1].nm_cliente2,
+        "cpf": dataArr[1].nu_documento2,
+        "birthday": `${birthdayFormat2[2]}-${birthdayFormat2[1]}-${birthdayFormat2[0]}`,
+        "phone": dataArr[1].telefone2,
+        "email": dataArr[1].email2,
+        "zipCode": dataArr[1].zipCode2,
+        "address": dataArr[1].address2,
+        "city": dataArr[1].city2,
+        "state": dataArr[0].state2.length <= 2 ? dataArr[0].state2 : dataArr[0].state2.substr(dataArr[0].state2.length - 3, 2),
+        "holder": cliente[0].nu_documento
+      }
+
+      arrBD.push(dep2);
+    } else if (dataArr[2].nu_documento3 != null) {
+      const data = dataArr[2].birthday1.split('/');
+      const birthdayFormat3 = data ? data : null;
+
+      const dep3 = {
+        "name": dataArr[2].nm_cliente3,
+        "cpf": dataArr[2].nu_documento3,
+        "birthday": `${birthdayFormat3[2]}-${birthdayFormat3[1]}-${birthdayFormat3[0]}`,
+        "phone": dataArr[2].telefone3,
+        "email": dataArr[2].email3,
+        "zipCode": dataArr[2].zipCode3,
+        "address": dataArr[2].address3,
+        "city": dataArr[2].city3,
+        "state": dataArr[0].state3.length <= 2 ? dataArr[0].state3 : dataArr[0].state3.substr(dataArr[0].state3.length - 3, 2),
+        "holder": cliente[0].nu_documento
+      };
+
+      arrBD.push(dep3);
     }
-
-    arrBD.push(dep1);
-  } else if (dataArr[1].nu_documento2 != null) {
-    const data = dataArr[1].birthday1.split('/');
-    const birthdayFormat2 = data ? data : null;
-
-    const dep2 = {
-      "name": dataArr[1].nm_cliente2,
-      "cpf": dataArr[1].nu_documento2,
-      "birthday": `${birthdayFormat2[2]}-${birthdayFormat2[1]}-${birthdayFormat2[0]}`,
-      "phone": dataArr[1].telefone2,
-      "email": dataArr[1].email2,
-      "zipCode": dataArr[1].zipCode2,
-      "address": dataArr[1].address2,
-      "city": dataArr[1].city2,
-      "state": dataArr[0].state2.length <= 2 ? dataArr[0].state2 : dataArr[0].state2.substr(dataArr[0].state2.length - 3, 2),
-      "holder": cliente[0].nu_documento
-    }
-
-    arrBD.push(dep2);
-  } else if (dataArr[2].nu_documento3 != null) {
-    const data = dataArr[2].birthday1.split('/');
-    const birthdayFormat3 = data ? data : null;
-
-    const dep3 = {
-      "name": dataArr[2].nm_cliente3,
-      "cpf": dataArr[2].nu_documento3,
-      "birthday": `${birthdayFormat3[2]}-${birthdayFormat3[1]}-${birthdayFormat3[0]}`,
-      "phone": dataArr[2].telefone3,
-      "email": dataArr[2].email3,
-      "zipCode": dataArr[2].zipCode3,
-      "address": dataArr[2].address3,
-      "city": dataArr[2].city3,
-      "state": dataArr[0].state3.length <= 2 ? dataArr[0].state3 : dataArr[0].state3.substr(dataArr[0].state3.length - 3, 2),
-      "holder": cliente[0].nu_documento
-    };
-
-    arrBD.push(dep3);
   }
+
+
 
   // } catch(err) {
   //    console.log("erro ao montar registro - linha 1215: ", err.message)
@@ -1436,21 +1440,6 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
       }, {
         where: { nu_documento: cpf }
       });
-
-      //acão para registrar ativaçao da vida na rapidoc
-      /* const franqueado = await Franqueado.findAll({
-         where: { id: cliente[0].id_franqueado }
-       });
- 
-       let vidasAtivas = franqueado[0].vendas;
- 
-       const novaVida = await Franqueado.update({
-         vendas: parseInt(vidasAtivas) + 1,
-       }, {
-         where: {
-           id: cliente[0].id_franqueado,
-         }
-       });*/
 
       //resposta para o cliente
       res.send(response.data);
