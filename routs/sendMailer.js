@@ -71,7 +71,7 @@ async function mailerNewCadastro(data, emaildestino) {
 
     <h3>Aqui estão os detalhes para acessar sua conta:</h3>
 
-    <p><strong>Website:</strong> <a href="${data.site_venda}teleconsulta">${data.site_venda}teleconsulta</a></p>
+    <p><strong>Website:</strong> <a href="${data.site_venda}">${data.site_venda}</a></p>
 
     <p>Também estamos disponíveis nas lojas de aplicativos:</p>
 
