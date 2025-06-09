@@ -26,7 +26,7 @@ const loginWordpress = require('../controllers/login/loginForWp.js');
 const sub_franqueados = require('../controllers/sub_franqueados/crud.js');
 const yampi = require('../controllers/yampi/index.js');
 const faturamento = require('../controllers/faturamento/index.js');
-const { webhookActivate } = require('../controllers/auto_ativacao/webhook.js');
+const { webhookActivate, webhookInactivate } = require('../controllers/auto_ativacao/webhook.js');
 const webhook = require('../controllers/webhook/index.js');
 
 
@@ -1550,25 +1550,17 @@ router.post('/oimed/webhook/:id', async (req, res) => {
   const parceiroID = req.params.id;
   const eventType = req.body.event;
 
-  if (eventType === 'PAYMENT_CONFIRMED' || eventType === 'PAYMENT_RECEIVED') {
-    const token = await Franqueado.findAll({
-      where: {
-        id: parceiroID
-      }
-    });
+  const token = await Franqueado.findAll({
+    where: {
+      id: parceiroID
+    }
+  });
 
+  if (eventType === 'PAYMENT_CONFIRMED' || eventType === 'PAYMENT_RECEIVED') {
     webhookActivate(req.body, token[0].tokenAsaas, res);
-  } else if (ventType === "PAYMENT_OVERDUE") {
+  } else if (eventType === "PAYMENT_OVERDUE") {
     webhookInactivate(req.body, token[0].tokenAsaas, res);
   }
-
-  res.json(eventType)
-
-  return;
-
-
-
-
 
 });
 
