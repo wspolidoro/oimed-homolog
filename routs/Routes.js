@@ -1550,16 +1550,27 @@ router.post('/oimed/webhook/:id', async (req, res) => {
   const parceiroID = req.params.id;
   const eventType = req.body.event;
 
-  const token = await Franqueado.findAll({
-    where: {
-      id: parceiroID
-    }
-  });
 
   if (eventType === 'PAYMENT_CONFIRMED' || eventType === 'PAYMENT_RECEIVED') {
+    const token = await Franqueado.findAll({
+      where: {
+        id: parceiroID
+      }
+    });
+
+
     webhookActivate(req.body, token[0].tokenAsaas, res);
   } else if (eventType === "PAYMENT_OVERDUE") {
+    const token = await Franqueado.findAll({
+      where: {
+        id: parceiroID
+      }
+    });
+
+
     webhookInactivate(req.body, token[0].tokenAsaas, res);
+  } else {
+    res.json({ success: true, message: "ok" })
   }
 
 });
