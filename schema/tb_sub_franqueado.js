@@ -9,6 +9,17 @@ const SubFranqueado = sequelize.define('oi_sub_franqueado', {
         primaryKey: true
     },
 
+    idFranqueadoMaster: {
+        type: Sequelize.NUMBER,
+        allowNull: false,
+        unique: false,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
+    },
+
     nome: {
         type: Sequelize.STRING(150),
         allowNull: false,
@@ -19,7 +30,7 @@ const SubFranqueado = sequelize.define('oi_sub_franqueado', {
             },
         }
     },
-
+    
     cpf: {
         type: Sequelize.STRING(150),
         allowNull: false,

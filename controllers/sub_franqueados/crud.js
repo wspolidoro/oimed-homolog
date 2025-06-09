@@ -12,6 +12,7 @@ module.exports = {
 
         try {
             const newFranqueado = await SubFranqueado.create({
+              idFranqueadoMaster: req.body.idFranqueadoMaster,
                 nome: req.body.nome,
                 cpf: req.body.cpf,
                 telefone: req.body.telefone,
@@ -36,13 +37,17 @@ module.exports = {
 
     },
     read: async (req, res) => {
-
-        const listSubFranqueado = await SubFranqueado.findAll();
+        const listSubFranqueado = await SubFranqueado.findAll({
+          where: {
+          idFranqueadoMaster: req.params.id
+          }
+        });
 
         res.json(listSubFranqueado);
 
     },
     createClientes: async (req, res) => {
+ 
         try {
             await sequelize.sync();
         

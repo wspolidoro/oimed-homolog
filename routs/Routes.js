@@ -27,6 +27,7 @@ const sub_franqueados = require('../controllers/sub_franqueados/crud.js');
 const yampi = require('../controllers/yampi/index.js');
 const faturamento = require('../controllers/faturamento/index.js');
 const { webhookActivate } = require('../controllers/auto_ativacao/webhook.js');
+const webhook = require('../controllers/webhook/index.js');
 
 
 
@@ -1547,16 +1548,32 @@ router.post('/ativacao', async (req, res) => {
 //webhook
 router.post('/oimed/webhook/:id', async (req, res) => {
   const parceiroID = req.params.id;
+  const eventType = req.body.event;
 
-  const token = await Franqueado.findAll({
-    where: {
-      id: parceiroID
-    }
-  });
+  if (eventType === 'PAYMENT_CONFIRMED' || eventType === 'PAYMENT_RECEIVED') {
+    const token = await Franqueado.findAll({
+      where: {
+        id: parceiroID
+      }
+    });
+
+    webhookActivate(req.body, token[0].tokenAsaas, res);
+  } else if (ventType === "PAYMENT_OVERDUE") {
+    webhookInactivate(req.body, token[0].tokenAsaas, res);
+  }
+
+  res.json(eventType)
+
+  return;
 
 
-  webhookActivate(req.body, token[0].tokenAsaas, res);
+
+
+
 });
+
+//WEBHOOKS
+//router.get('/webhook/subscription', );
 
 
 
@@ -1710,7 +1727,7 @@ router.get('/payment/reminder/1', paymentReminder.paymentReminder1);
 
 //SUBPAINEIS
 router.post('/subpainel/create', sub_franqueados.create);
-router.get('/subpainel/read', sub_franqueados.read);
+router.get('/subpainel/read/:id', sub_franqueados.read);
 router.post('/subpainel/create/clientes', sub_franqueados.createClientes);
 
 //ORDERs YAMPI
@@ -1720,6 +1737,45 @@ router.post('/conectamed/notification', yampi.webhook);
 //FATURAMENTO
 router.get('/list/parceiros', faturamento.listParceiros);
 router.get('/list/clientes/:id', faturamento.listDados);
+
+
+
+//envioEmMassaTeste()
+
+async function envioEmMassaTeste() {
+  //const arr = [5004, 5008, 5009, 5019]
+
+  const emailsUsers = await Clientes.findAll({
+    where: {
+      id: [5004, 5008, 5009, 5019]
+    },
+    attributes: ['email', 'id_franqueado'],
+    raw: true
+  });
+
+
+  console.log("emailsUsers: ", emailsUsers)
+
+  emailsUsers.map(async (idFranqueado) => {
+
+    const dataFranqueado = await Franqueado.findAll({
+      where: {
+        id: idFranqueado.id_franqueado
+      }
+    });
+
+    //console.log("idFranqueado: ", dataFranqueado[0].dataValues, idFranqueado.email);
+    await mailerNewCadastro(dataFranqueado[0].dataValues, idFranqueado.email);
+  })
+  /*   
+  
+      if (idFranqueado == 74) {
+        let sending = await mailerNewCadastroConnectVitta(dataFranqueado[0].dataValues, emaildestino);
+      } else {
+        let sending = await mailerNewCadastro(dataFranqueado[0].dataValues, emaildestino); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
+  
+      } */
+}
 
 
 module.exports = router;
