@@ -85,12 +85,12 @@ function webhookActivate(body, token, res) {
             method: 'GET',
             headers: {
                 accept: 'application/json',
-                access_token: tokenSandBox
+                access_token: token
             }
         };
 
 
-        fetch(urlSandBox, options)
+        fetch(urlProd, options)
             .then(res => res.json())
             .then(json => {
                 console.log(json.cpfCnpj);
@@ -114,12 +114,12 @@ function webhookInactivate(body, token, res) {
             method: 'GET',
             headers: {
                 accept: 'application/json',
-                access_token: tokenSandBox
+                access_token: token
             }
         };
 
 
-        fetch(urlSandBox, options)
+        fetch(urlProd, options)
             .then(res => res.json())
             .then(json => {
                 console.log(json.cpfCnpj);
