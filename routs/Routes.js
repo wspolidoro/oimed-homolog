@@ -800,9 +800,45 @@ router.post('/franqueado/filter', async (req, res) => {
 router.post('/cliente/filter/status/:status', async (req, res) => {
   let statusParam = req.params.status;
   try {
+    /*   const situacaoAtual = await Clientes.findAll({
+        where: {
+          situacao: statusParam,
+          id_franqueado: req.body.id
+        }
+      }); */
+
     const situacaoAtual = await Clientes.findAll({
       where: {
         situacao: statusParam,
+        id_franqueado: req.body.id
+      },
+      order: [
+        // COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento) ASC
+        [literal(`COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento)`), 'ASC'],
+
+        // CASE WHEN cpf_titular = 'titular' THEN 0 ELSE 1 END ASC
+        [literal(`CASE WHEN cpf_titular = 'titular' THEN 0 ELSE 1 END`), 'ASC'],
+
+        // nu_documento ASC
+        ['nu_documento', 'ASC']
+      ]
+    });
+
+    res.json(situacaoAtual);
+  }
+  catch (err) {
+    res.json({ success: false, message: "Franqueado não encotrado!" })
+  }
+
+
+});
+
+router.post('/cliente/filter/plan/:plan', async (req, res) => {
+  let statusParam = req.params.plan;
+  try {
+    const situacaoAtual = await Clientes.findAll({
+      where: {
+        cobertura: statusParam,
         id_franqueado: req.body.id
       }
     });
@@ -847,9 +883,26 @@ router.post('/franqueado/clientes/list', async (req, res) => {
 
     return res.send(nmClientes);
   } else if (req.body.perfil == "guest") {
+
+    const { Op, literal } = require('sequelize');
+
     const nmClientes = await Clientes.findAll({
-      where: { id_franqueado: req.body.id }
+      where: {
+        id_franqueado: 26
+      },
+      order: [
+        // COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento) ASC
+        [literal(`COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento)`), 'ASC'],
+
+        // CASE WHEN cpf_titular = 'titular' THEN 0 ELSE 1 END ASC
+        [literal(`CASE WHEN cpf_titular = 'titular' THEN 0 ELSE 1 END`), 'ASC'],
+
+        // nu_documento ASC
+        ['nu_documento', 'ASC']
+      ]
     });
+
+
 
     res.send(nmClientes)
   } else {
