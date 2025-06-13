@@ -888,7 +888,7 @@ router.post('/franqueado/clientes/list', async (req, res) => {
 
     const nmClientes = await Clientes.findAll({
       where: {
-        id_franqueado: 26
+        id_franqueado: req.body.id
       },
       order: [
         // COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento) ASC
