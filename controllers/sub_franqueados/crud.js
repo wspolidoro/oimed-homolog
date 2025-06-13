@@ -31,7 +31,7 @@ module.exports = {
 
       res.json(newFranqueado);
     } catch (err) {
-      console.log(err)
+      console.log(err);
     }
 
   },
