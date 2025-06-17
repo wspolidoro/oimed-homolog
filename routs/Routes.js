@@ -838,24 +838,37 @@ router.post('/cliente/filter/status/:status', async (req, res) => {
 router.post('/cliente/filter/plan/:plan', async (req, res) => {
   let statusParam = req.params.plan;
   try {
-    const situacaoAtual = await Clientes.findAll({
-      where: {
-        situacao: statusParam,
-        id_franqueado: req.body.id
-      },
-      order: [
-        // COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento) ASC
-        [literal(`COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento)`), 'ASC'],
 
-        // CASE WHEN cpf_titular = 'titular' THEN 0 ELSE 1 END ASC
-        [literal(`CASE WHEN cpf_titular = 'titular' THEN 0 ELSE 1 END`), 'ASC'],
+    if (statusParam === "individual") {
+      const situacaoAtual = await Clientes.findAll({
+        where: {
+          cobertura: statusParam,
+          id_franqueado: req.body.id
+        }
+      });
+      res.json(situacaoAtual);
+    } else {
+      const situacaoAtual = await Clientes.findAll({
+        where: {
+          situacao: statusParam,
+          id_franqueado: req.body.id
+        },
+        order: [
+          // COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento) ASC
+          [literal(`COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento)`), 'ASC'],
 
-        // nu_documento ASC
-        ['nu_documento', 'ASC']
-      ]
-    });
+          // CASE WHEN cpf_titular = 'titular' THEN 0 ELSE 1 END ASC
+          [literal(`CASE WHEN cpf_titular = 'titular' THEN 0 ELSE 1 END`), 'ASC'],
 
-    res.json(situacaoAtual);
+          // nu_documento ASC
+          ['nu_documento', 'ASC']
+        ]
+      });
+
+      res.json(situacaoAtual);
+    }
+
+
   }
   catch (err) {
     res.json({ success: false, message: "Franqueado não encotrado!" })
