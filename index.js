@@ -3,7 +3,7 @@ const app = express();
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const path = require('path');
-const port = process.env.PORT || 3035;
+const port = process.env.PORT || 3036;
 const rout = require('./routs/Routes');
 const routerApi = require('./api/api');
 const routerSandbox = require('./api/sandbox');
@@ -27,13 +27,13 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use('/api/', rout);
 
-app.get('/mailerr', async(req, res) => {
-    
+app.get('/mailerr', async (req, res) => {
+
     let sending = await sendMailError(req.query.id, "Vida não cadastrada na RD");
-    if(sending) {
-        res.json({success: true, message: "Email enviado!"})
+    if (sending) {
+        res.json({ success: true, message: "Email enviado!" })
     }
-    
+
 
 });
 

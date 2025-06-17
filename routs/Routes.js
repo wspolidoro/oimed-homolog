@@ -850,7 +850,7 @@ router.post('/cliente/filter/plan/:plan', async (req, res) => {
     } else {
       const situacaoAtual = await Clientes.findAll({
         where: {
-          situacao: statusParam,
+          cobertura: statusParam,
           id_franqueado: req.body.id
         },
         order: [
@@ -864,7 +864,6 @@ router.post('/cliente/filter/plan/:plan', async (req, res) => {
           ['nu_documento', 'ASC']
         ]
       });
-
       res.json(situacaoAtual);
     }
 
