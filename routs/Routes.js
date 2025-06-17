@@ -37,7 +37,8 @@ const { CriarUsuarioAlloyal, InativaUsuarioAlloyal, AtivaUsuarioAlloyal } = requ
 
 
 //LIBS
-const { Op, Sequelize } = require('sequelize');
+const { Op, Sequelize, literal } = require('sequelize');
+ //const { Op, literal } = require('sequelize');
 
 const secretKey = "@rfxzsklc_s+bg7t+@f6^obve=f!swr1%0838lctalor92vi";
 
@@ -827,6 +828,7 @@ router.post('/cliente/filter/status/:status', async (req, res) => {
     res.json(situacaoAtual);
   }
   catch (err) {
+    console.log(err)
     res.json({ success: false, message: "Franqueado não encotrado!" })
   }
 
@@ -884,7 +886,7 @@ router.post('/franqueado/clientes/list', async (req, res) => {
     return res.send(nmClientes);
   } else if (req.body.perfil == "guest") {
 
-    const { Op, literal } = require('sequelize');
+   
 
     const nmClientes = await Clientes.findAll({
       where: {
@@ -1832,6 +1834,13 @@ async function envioEmMassaTeste() {
   
       } */
 }
+
+router.get('/newFeat', (req, res) => {
+  res.json({
+    success: true,
+    message: "testando nova feature"
+  })
+})
 
 
 module.exports = router;
