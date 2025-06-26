@@ -10,7 +10,11 @@ const { faker } = require('@faker-js/faker');
 const mailer = require('./sendMailer');
 
 //DEBBUG
-const { sendMailError, mailerNewCadastro, mailerNewCadastroConnectVitta } = require('./sendMailer.js');
+const { sendMailError,
+  mailerNewCadastro,
+  mailerNewCadastroModel2,
+  mailerNewCadastroModel3,
+  mailerNewCadastroConnectVitta } = require('./sendMailer.js');
 
 //SCHEMAS
 const Franqueado = require('../schema/tb_franqueado');
@@ -420,12 +424,14 @@ router.post('/franqueado/clientes', async (req, res) => {
       }
     });
 
-
     if (idFranqueado == 74) {
-      let sending = await mailerNewCadastroConnectVitta(dataFranqueado[0].dataValues, emaildestino);
+      await mailerNewCadastroConnectVitta(dataFranqueado[0].dataValues, emaildestino);
+    } else if (dataFranqueado[0].dataValues.emailModel == 2) {
+      await mailerNewCadastroModel2(dataFranqueado[0].dataValues, emaildestino);
+    } else if (dataFranqueado[0].dataValues.emailModel == 3) {
+      await mailerNewCadastroModel3(dataFranqueado[0].dataValues, emaildestino);
     } else {
-      let sending = await mailerNewCadastro(dataFranqueado[0].dataValues, emaildestino); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
-
+      await mailerNewCadastro(dataFranqueado[0].dataValues, emaildestino); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
     }
 
 

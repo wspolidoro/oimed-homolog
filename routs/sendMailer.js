@@ -45,9 +45,6 @@ async function sendMailError(data, msg, msgErro, nu_painel, status) {
 };
 
 async function mailerNewCadastro(data, emaildestino) {
-
-    //variaveis do corpo de envio do email com variação de idiomas para o novo aluno
-
     const mailSentPT = await transporter.sendMail({
         from: `${data.siteTitle} <${data.siteEmail}>`,
         to: emaildestino,
@@ -67,11 +64,12 @@ async function mailerNewCadastro(data, emaildestino) {
     
     <p>Obrigado por fazer o pedido!</p>
 
-    <p>Recebemos seu pedido com sucesso e assim que o pagamento for confirmado, você estará pronto para aproveitar todos os benefícios do melhor plano de saúde online, ${data.siteTitle}!</p>
+    <p>Nós recebemos seu pedido com sucesso e assim que o pagamento for confirmado, você estará pronto para aproveitar todos os benefícios do melhor plano de Telemedicina, ${data.siteTitle}!</p>
 
     <h3>Aqui estão os detalhes para acessar sua conta:</h3>
 
-    <p><strong>Website:</strong> <a href="${data.site_venda}">${data.site_venda}</a></p>
+    <p><strong>Nosso Site:</strong> <a href="${data.site_venda}">${data.site_venda}</a></p>
+    <p><strong>Aplicativo Webapp:</strong> <a href="${data.site_venda}">${data.site_venda}</a></p>
 
     <p>Também estamos disponíveis nas lojas de aplicativos:</p>
 
@@ -80,19 +78,29 @@ async function mailerNewCadastro(data, emaildestino) {
         <li><strong>Apple App Store:</strong> <a href="${data.linkApple}">${data.linkApple}</a></li>
     </ul>
 
-    <h3>Para acessar sua conta:</h3>
+    <h3>Para acessar a plataforma de consultas de maneira fácil e rápida acesse o link de consulta:</h3>
     <ul>
-        <li>Pelo link web, o acesso é imediato.</li>
-        <li>Nos aplicativos, o cadastro pode levar até 24 horas para ser ativado.</li>
+        <li><strong></strong> <a href="${data.linkAndroid}">${data.linkAndroid}</a></li>
+    </ul>
+    <ul>
+        <li>O acesso também pode ser feito através de nosso WebApp e no botão de consulta no site, que são imediatos.
+</li>
+        <li>Já nos aplicativos, o cadastro pode levar até 24 horas para ser ativado.
+</li>
     </ul>
 
-    <h3>Dados de acesso:</h3>
+    <h3>Seus dados de acesso:</h3>
     <p><strong>CPF:</strong> [Insira seu CPF]</p>
     <p><strong>Senha:</strong> Os 4 primeiros dígitos do seu CPF</p>
 
-    <p>Nossa equipe de suporte está pronta para ajudar caso você precise de alguma assistência. Entre em contato conosco pelo e-mail: <a href="mailto:${data.siteEmail}">${data.siteEmail}</a>.</p>
+    <p>Nossa equipe de suporte está pronta para ajudar caso você precise de alguma assistência. Entre em contato conosco.</p>
 
-    <p>Seja bem-vindo(a) à ${data.siteTitle} e aproveite os benefícios do nosso plano de saúde online!</p>
+    <p>
+    <strong>E-mail:</strong> <a href="mailto:${data.siteEmail}">${data.siteEmail}</a><br/>
+    <strong>WhatsApp:</strong> ${data.telefone}
+    </p>
+
+    <p>Seja bem-vindo(a) à ${data.siteTitle} e aproveite os benefícios do nosso plano de Telemedicina!</p>
 
     <hr>
     <p>--</p>
@@ -105,7 +113,125 @@ async function mailerNewCadastro(data, emaildestino) {
                   }
               ] */
     });
-    return mailSentPT
+
+    //---------------------------------------------------------------------------------->
+
+};
+
+async function mailerNewCadastroModel2(data, emaildestino) {
+    const mailSentPT = await transporter.sendMail({
+        from: `${data.siteTitle} <${data.siteEmail}>`,
+        to: emaildestino,
+        bcc: "naoresponda@painelw.com.br",
+        subject: `${data.siteTitle} INFORMA!`,
+        text: `${data.siteTitle} INFORMA!`,
+        html:  `
+        <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedido Recebido!</title>
+</head>
+<body>
+    <p>De: <strong>${data.siteTitle}</strong> &lt;${data.siteEmail}&gt;</p>
+    <p>Assunto: <strong>Pedido Recebido!</strong></p>
+    
+    <p>Obrigado por fazer o pedido!</p>
+
+    <p>Nós recebemos seu pedido com sucesso e assim que o pagamento for confirmado, você estará pronto para aproveitar todos os benefícios do melhor plano de Telemedicina, ${data.siteTitle}!</p>
+
+    <h3>Aqui estão os detalhes para acessar sua conta:</h3>
+
+    <p><strong>Aplicativo Webapp:</strong> <a href="${data.site_venda}">${data.site_venda}</a></p>
+
+    <h3>Para acessar a plataforma de consultas de maneira fácil e rápida acesse o link de consulta:</h3>
+    <ul>
+        <li><strong></strong> <a href="${data.linkAndroid}">${data.linkAndroid}</a></li>
+    </ul>
+
+    <h3>Seus dados de acesso:</h3>
+    <p><strong>CPF:</strong> [Insira seu CPF]</p>
+    <p><strong>Senha:</strong> Os 4 primeiros dígitos do seu CPF</p>
+
+    <p>Nossa equipe de suporte está pronta para ajudar caso você precise de alguma assistência. Entre em contato conosco.</p>
+
+    <p>
+    <strong>E-mail:</strong> <a href="mailto:${data.siteEmail}">${data.siteEmail}</a><br/>
+    <strong>WhatsApp:</strong> ${data.telefone}
+    </p>
+
+    <p>Seja bem-vindo(a) à ${data.siteTitle} e aproveite os benefícios do nosso plano de Telemedicina!</p>
+
+    <hr>
+    <p>--</p>
+    <p>Este e-mail foi enviado de um formulário de contato em <strong>${data.siteTitle}</strong> (<a href="${data.site_venda}">${data.site_venda}</a>)</p>
+</body>
+        `
+        /*       attachments: [
+                  {
+                      path: path
+                  }
+              ] */
+    });
+
+    //---------------------------------------------------------------------------------->
+
+};
+
+async function mailerNewCadastroModel3(data, emaildestino) {
+    const mailSentPT = await transporter.sendMail({
+        from: `${data.siteTitle} <${data.siteEmail}>`,
+        to: emaildestino,
+        bcc: "naoresponda@painelw.com.br",
+        subject: `${data.siteTitle} INFORMA!`,
+        text: `${data.siteTitle} INFORMA!`,
+        html: `
+        <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedido Recebido!</title>
+</head>
+<body>
+    <p>De: <strong>${data.siteTitle}</strong> &lt;${data.siteEmail}&gt;</p>
+    <p>Assunto: <strong>Pedido Recebido!</strong></p>
+    
+    <p>Obrigado por fazer o pedido!</p>
+
+    <p>Nós recebemos seu pedido com sucesso e assim que o pagamento for confirmado, você estará pronto para aproveitar todos os benefícios do melhor plano de Telemedicina, ${data.siteTitle}!</p>
+
+    <h3>Aqui estão os detalhes para acessar sua conta:</h3>
+
+    <h4>Para acessar a plataforma de consultas de maneira fácil e rápida acesse o link de consulta:</h4>
+    <ul>
+        <li><strong></strong> <a href="${data.linkAndroid}">${data.linkAndroid}</a></li>
+    </ul>
+
+    <h3>Seus dados de acesso:</h3>
+    <p><strong>CPF:</strong> [Insira seu CPF]</p>
+    <p><strong>Senha:</strong> Os 4 primeiros dígitos do seu CPF</p>
+
+    <p>Nossa equipe de suporte está pronta para ajudar caso você precise de alguma assistência. Entre em contato conosco.</p>
+
+    <p>
+    <strong>E-mail:</strong> <a href="mailto:${data.siteEmail}">${data.siteEmail}</a><br/>
+    <strong>WhatsApp:</strong> <a href="https://api.whatsapp.com/send?phone=${data.telefone}&text=Preciso de ajuda!">https://api.whatsapp.com</a><br/>
+    </p>
+
+    <p>Seja bem-vindo(a) à ${data.siteTitle} e aproveite os benefícios do nosso plano de Telemedicina!</p>
+
+    <hr>
+    <p>--</p>
+    <p>Este e-mail foi enviado de um formulário de contato em <strong>${data.siteTitle}</strong> (<a href="${data.site_venda}">${data.site_venda}</a>)</p>
+</body>
+        `
+        /*       attachments: [
+                  {
+                      path: path
+                  }
+              ] */
+    });
+
     //---------------------------------------------------------------------------------->
 
 };
@@ -216,6 +342,8 @@ async function mailerPaymentReminder(ccEmails, from, to, subject, text) {
 module.exports = {
     sendMailError,
     mailerNewCadastro,
+    mailerNewCadastroModel2,
+    mailerNewCadastroModel3,
     mailerPaymentReminder,
     mailerNewCadastroConnectVitta
 };

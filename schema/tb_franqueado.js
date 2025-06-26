@@ -131,6 +131,11 @@ const Franqueado = sequelize.define('oi_franqueado', {
         unique: false
     },
 
+    emailModel: {
+        type: Sequelize.INTEGER(2),
+        allowNull: true
+    },
+
     status: {
         type: Sequelize.STRING(150),
         allowNull: false,
