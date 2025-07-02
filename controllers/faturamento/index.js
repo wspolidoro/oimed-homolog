@@ -72,6 +72,7 @@ module.exports = {
             where: {
                 id_franqueado: req.params.id,
                 cobertura: "familiar",
+                cpf_titular: "titular"
                 //situacao: "ativo"
             },
             attributes: ['id', 'nm_cliente', 'serviceType', 'dtDesativacao', 'cobertura', 'situacao'],

@@ -1833,7 +1833,7 @@ async function envioEmMassaTeste() {
 
   const emailsUsers = await Clientes.findAll({
     where: {
-      id: [5004, 5008, 5009, 5019]
+      id: [5488]
     },
     attributes: ['email', 'id_franqueado'],
     raw: true
