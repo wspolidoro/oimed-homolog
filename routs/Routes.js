@@ -1083,12 +1083,6 @@ router.put('/franqueado/cliente/status', async (req, res) => {
 
 });
 
-
-router.get('/testemail', async (req, res) => {
-  /*   const envio = await mailer();
-    res.send(envio); */
-})
-
 //gerar PDF inscrição
 router.get('/pdf', async (req, response) => {
 

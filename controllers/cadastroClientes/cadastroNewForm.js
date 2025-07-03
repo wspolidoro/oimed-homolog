@@ -14,7 +14,6 @@ const controlAtivarVida = require('../telemedicinaActions/actions');
 
 
 module.exports = {
-//rota de testes para reservar clientes
     cadastrarVida: async (req, res) => {
         
         console.log(req.body.id_franqueado);
@@ -171,7 +170,7 @@ module.exports = {
               setTimeout(function() {
                   //controlAtivarVida.ativar(req, res)
               }, 5000);
-              alterarParaAtivo(newCliente);
+              //alterarParaAtivo(newCliente);
             
           }
           
@@ -183,7 +182,7 @@ module.exports = {
               setTimeout(function() {
                   //controlAtivarVida.ativar(req, res)
               }, 5000);
-              alterarParaAtivo(newCliente);
+              //alterarParaAtivo(newCliente);
             
           }
           
