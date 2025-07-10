@@ -376,11 +376,18 @@ router.post('/franqueado/clientes', async (req, res) => {
     var cpfNumber = req.body.nu_documento;
     var numericCpfNumber = cpfNumber.replace(/\D/g, "");
 
+    //formatar telefone
+    let telefoneInformado = (numero) => {
+      return numero
+        .replace(/\D/g, '')     // Remove tudo que não for dígito
+        .replace(/^55/, '');    // Remove o 55 do começo, se existir
+    }
+
     const newCliente = await Clientes.create({
       nm_cliente: req.body.nm_cliente,
       nu_documento: numericCpfNumber,
       birthday: req.body.birthday,
-      telefone: req.body.telefone,
+      telefone: telefoneInformado(req.body.telefone),
       email: req.body.email,
       zip_code: req.body.zip_code,
       address: req.body.address,
