@@ -453,7 +453,7 @@ router.post('/franqueado/clientes', async (req, res) => {
             nm_cliente: beneficiario["nm_cliente" + contador],
             nu_documento: beneficiario["nu_documento" + contador],
             birthday: beneficiario["birthday" + contador],
-            telefone: beneficiario["telefone" + contador],
+            telefone: telefoneInformado(beneficiario["telefone" + contador]),
             email: beneficiario["email" + contador],
             zip_code: beneficiario["zipCode" + contador],
             address: beneficiario["address" + contador],
