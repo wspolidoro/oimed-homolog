@@ -53,7 +53,8 @@ module.exports = {
           "address1": req.body.address1 || null,
           "city1": req.body.city1 || null,
           "state1": req.body.state1 || null,
-          "holder": numericCpfNumber
+          "holder": numericCpfNumber,
+          "cobertura": "familiar"
         },
         {
           "nm_cliente2": req.body.nm_cliente2 || null,
@@ -64,7 +65,9 @@ module.exports = {
           "zipCode2": "57200000" || null,
           "address2": req.body.address2 || null,
           "city2": req.body.city2 || null,
-          "state2": req.body.state2 || null
+          "state2": req.body.state2 || null,
+          "holder": numericCpfNumber,
+          "cobertura": "familiar"
         },
         {
           "nm_cliente3": req.body.nm_cliente3 || null,
@@ -75,7 +78,9 @@ module.exports = {
           "zipCode3": "57200000" || null,
           "address3": req.body.address3 || null,
           "city3": req.body.city3 || null,
-          "state3": req.body.state3 || null
+          "state3": req.body.state3 || null,
+          "holder": numericCpfNumber,
+          "cobertura": "familiar"
         }
       );
     }
@@ -94,7 +99,7 @@ module.exports = {
 
 
     try {
-      await sequelize.sync();
+      //await sequelize.sync();
 
       console.log("kledisom testando", req.body);
       console.log(JSON.stringify(arrayDefault))
@@ -125,6 +130,7 @@ module.exports = {
         serviceType: req.body.serviceType,
         link: req.body.link,
         beneficiarios: planFamiliar == 'true' ? JSON.stringify(beneficiarioArray) : JSON.stringify(arrayDefault),
+        cobertura: planFamiliar == 'true' ? "familiar" : "individual",
         id_franqueado: req.body.id_franqueado,
         cpf_titular: "titular"
       });
@@ -161,6 +167,7 @@ module.exports = {
               serviceType: req.body.serviceType,
               link: req.body.link,
               beneficiarios: arrayDefault,
+              cobertura: planFamiliar == 'true' ? "familiar" : "individual",
               id_franqueado: req.body.id_franqueado,
               cpf_titular: numericCpfNumber
             });

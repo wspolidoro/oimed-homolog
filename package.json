@@ -1,6 +1,6 @@
 {
   "name": "mysql",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "inicio do projeto",
   "main": "index.js",
   "scripts": {
