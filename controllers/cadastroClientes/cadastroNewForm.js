@@ -8,6 +8,7 @@ const { faker } = require('@faker-js/faker');
 const Franqueado = require('../../schema/tb_franqueado');
 const Clientes = require('../../schema/tb_clientes');
 const Rapidoc = require('../../schema/tb_rapidoc');
+const CartPanda = require('../../schema/tb_cart_panda.js');
 
 //CONTROLLERS
 const controlAtivarVida = require('../telemedicinaActions/actions');
@@ -108,6 +109,14 @@ module.exports = {
       var cpfNumber = req.body.nu_documento;
       var numericCpfNumber = cpfNumber.replace(/\D/g, "");
 
+      const cliente = await CartPanda.findOne({
+        where: {
+          nu_documento: numericCpfNumber,
+          status_payment: 3
+        },
+        raw: true
+      });
+
       const newCliente = await Clientes.create({
         nm_cliente: req.body.nm_cliente,
         nu_documento: numericCpfNumber,
@@ -179,12 +188,16 @@ module.exports = {
         });
 
         //ativar na Rapidoc
+        if (cliente) {
+          alterarParaAtivo(newCliente);
+        }
+
+
         if (req.body.situacao == "ativo") {
           setTimeout(function () {
             //controlAtivarVida.ativar(req, res)
           }, 5000);
           //alterarParaAtivo(newCliente);
-
         }
 
         res.json({ success: true, message: "criado com sucesso" });
