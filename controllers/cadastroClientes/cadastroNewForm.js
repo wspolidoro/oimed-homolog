@@ -113,8 +113,7 @@ module.exports = {
         where: {
           nu_documento: numericCpfNumber,
           status_payment: 3
-        },
-        raw: true
+        }
       });
 
       const newCliente = await Clientes.create({
@@ -144,7 +143,13 @@ module.exports = {
         cpf_titular: "titular"
       });
 
-      console.log(newCliente.nm_cliente)
+      console.log(newCliente.nm_cliente, cliente)
+
+      //ativar na Rapidoc
+      if (cliente) {
+        console.log("testessssssssss", newCliente)
+        alterarParaAtivo(newCliente);
+      }
 
 
       if (newCliente && planFamiliar == "true") {
@@ -188,11 +193,6 @@ module.exports = {
         });
 
         //ativar na Rapidoc
-        if (cliente) {
-          alterarParaAtivo(newCliente);
-        }
-
-
         if (req.body.situacao == "ativo") {
           setTimeout(function () {
             //controlAtivarVida.ativar(req, res)
@@ -216,15 +216,28 @@ module.exports = {
       }
 
       function alterarParaAtivo(client) {
-        fetch(`https://apioimed.z4you.com.br/beneficiaries/create/${client.nu_documento}`,
+        //https://apioimed.z4you.com.br/beneficiaries/create/
+        fetch(`https://parceiro.painelw.com.br/api/beneficiaries/create/${client.nu_documento}`,
           {
             method: "POST",
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(req.body)
           })
           .then((x) => x.json())
-          .then((res) => {
+          .then(async (res) => {
             console.log("novo fetch: ", res);
+            if (res.success) {
+
+              const cliente = await Clientes.update({
+                situacao: "ativo",
+              }, {
+                where: {
+                  nu_documento: res.beneficiaries[0].cpf,
+                }
+              });
+
+
+            }
           });
       };
 
