@@ -122,7 +122,7 @@ const Franqueado = sandbox.define('oi_franqueado', {
 
     status: {
         type: Sequelize.STRING(150),
-        allowNull: false,
+        allowNull: true,
         unique: false,
         validate: {
             notEmpty: {

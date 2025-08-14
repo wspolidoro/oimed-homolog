@@ -88,7 +88,7 @@ const Franqueado = sequelize.define('oi_franqueado', {
 
     dado_banc: {
         type: Sequelize.STRING(150),
-        allowNull: false,
+        allowNull: true,
         unique: false,
         validate: {
             notEmpty: {
@@ -99,13 +99,8 @@ const Franqueado = sequelize.define('oi_franqueado', {
 
     dado_pix: {
         type: Sequelize.STRING(150),
-        allowNull: false,
-        unique: false,
-        validate: {
-            notEmpty: {
-                msg: "Esse campo não pode está vazio.."
-            },
-        }
+        allowNull: true,
+        unique: false
     },
 
     site_venda: {
@@ -160,7 +155,7 @@ const Franqueado = sequelize.define('oi_franqueado', {
 
     products: {
         type: Sequelize.STRING(150),
-        allowNull: false,
+        allowNull: true,
         unique: false,
         validate: {
             notEmpty: {

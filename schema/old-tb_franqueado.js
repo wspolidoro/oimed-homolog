@@ -88,7 +88,7 @@ const Franqueado = database.define('oi_franqueado', {
 
     dado_banc: {
         type: Sequelize.STRING(150),
-        allowNull: false,
+        allowNull: true,
         unique: false,
         validate: {
             notEmpty: {
@@ -99,7 +99,7 @@ const Franqueado = database.define('oi_franqueado', {
 
     dado_pix: {
         type: Sequelize.STRING(150),
-        allowNull: false,
+        allowNull: true,
         unique: false,
         validate: {
             notEmpty: {

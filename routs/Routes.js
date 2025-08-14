@@ -316,15 +316,17 @@ router.post('/franqueado', async (req, res) => {
       telefone: req.body.telefone,
       email: req.body.email,
       password: faker.string.hexadecimal({ length: 12 }),
-      total_clientes: '3',
+      total_clientes: '0',
       vendas: '0',
       dado_banc: req.body.nu_banco,
       dado_pix: req.body.chave_pix,
       site_venda: req.body.site_url,
       status: 'ativo',
       perfil: 'guest',
-      products: req.body.products,
-      subPaineis: 0,
+      siteTitle: req.body.nome_projeto,
+      siteEmail: req.body.email_projeto,
+      //products: req.body.products,
+      subPaineis: req.body.sub_paineis,
       autoridade: 3
     });
 
@@ -333,6 +335,47 @@ router.post('/franqueado', async (req, res) => {
     res.json(newFranqueado);
 
   } catch (err) {
+    return res.status(400).json(err)
+  }
+
+});
+
+//rota de testes para adicionar franqueados
+router.put('/franqueado/:clientId', async (req, res) => {
+  try {
+
+    const newFranqueado = await Franqueado.update({
+      nome: req.body.nome,
+      cpf: req.body.cpf,
+      telefone: req.body.telefone,
+      email: req.body.email,
+      password: faker.string.hexadecimal({ length: 12 }),
+      total_clientes: '0',
+      vendas: '0',
+      dado_banc: req.body.nu_banco,
+      dado_pix: req.body.chave_pix,
+      site_venda: req.body.site_url,
+      status: 'ativo',
+      perfil: 'guest',
+      siteTitle: req.body.nome_projeto,
+      siteEmail: req.body.email_projeto,
+      linkApple: req.body.link_app_ios,
+      linkAndroid: req.body.link_app_android,
+      //products: req.body.products,
+      subPaineis: req.body.sub_paineis,
+      autoridade: 3
+    }, {
+      where: {
+        id: req.params.clientId,
+      }
+    });
+
+    //console.log(req.body) 
+
+    res.json(newFranqueado);
+
+  } catch (err) {
+    console.log(err)
     return res.status(400).json(err)
   }
 
@@ -902,7 +945,9 @@ router.get('/franqueado/list', async (req, res) => {
 router.post('/franqueado/listunique', async (req, res) => {
   const linkFranqueado = await Franqueado.findAll({
     where: {
-      cpf: req.body.cpf
+      nome: {
+        [Op.like]: `${req.body.cpf}%`
+      }
     }
   });
 
@@ -1834,7 +1879,7 @@ async function envioEmMassaTeste() {
 
   const emailsUsers = await Clientes.findAll({
     where: {
-      id: [5488]
+      id: [5801, 5803, 5804, 5792, 5793, 5794, 5795]
     },
     attributes: ['email', 'id_franqueado'],
     raw: true
