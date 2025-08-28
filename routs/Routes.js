@@ -307,6 +307,7 @@ router.get('/', async (req, res) => {
 
 //rota de testes para adicionar franqueados
 router.post('/franqueado', async (req, res) => {
+
   try {
     await sequelize.sync();
 
@@ -325,6 +326,7 @@ router.post('/franqueado', async (req, res) => {
       perfil: 'guest',
       siteTitle: req.body.nome_projeto,
       siteEmail: req.body.email_projeto,
+      emailModel: parseInt(req.body.modelo_email),
       //products: req.body.products,
       subPaineis: req.body.sub_paineis,
       autoridade: 3
@@ -1879,7 +1881,9 @@ async function envioEmMassaTeste() {
 
   const emailsUsers = await Clientes.findAll({
     where: {
-      id: [5801, 5803, 5804, 5792, 5793, 5794, 5795]
+      id_franqueado: 93
+      //id: [5801, 5803, 5804, 5792, 5793, 5794, 5795]
+      //id: 6087
     },
     attributes: ['email', 'id_franqueado'],
     raw: true
