@@ -543,9 +543,10 @@ router.post('/franqueado/clientes', async (req, res) => {
 //rota de testes para atualizar dados de clientes
 router.put('/franqueado/clientes/update', async (req, res) => {
   try {
-    await sequelize.sync();
+    
 
     console.log("request de atualização", req.body);
+
 
     var cpfNumber = req.body.nu_documento;
     var numericCpfNumber = cpfNumber.replace(/\D/g, "");
@@ -590,9 +591,27 @@ router.put('/franqueado/clientes/update', async (req, res) => {
       }
     });
 
-    //console.log("mycliente", newCliente)
+ 
 
-    criarDependenteGeral()
+   // console.log("mycliente", numericCpfNumber)
+
+    try {
+         const selectCobertura = await Clientes.update({
+      cobertura: req.body.cobertura,
+    }, {
+      where: {
+        [Op.or]: [
+          { nu_documento: numericCpfNumber },
+          { cpf_titular: numericCpfNumber }
+        ]
+      }
+    });
+      criarDependenteGeral()
+    } catch (err) {
+      console.log("Erro ao atualizar cliente:", err);
+    }
+
+
 
     function criarDependenteGeral() {
       const arrayDefault = '[{"nm_cliente1":null,"nu_documento1":null,"birthday1":null,"email1":null,"telefone1":null,"zipCode1":null,"address1":null,"city1":null,"state1":null},{"nm_cliente2":null,"nu_documento2":null,"birthday2":null,"email2":null,"telefone2":null,"zipCode2":null,"address2":null,"city2":null,"state2":null},{"nm_cliente3":null,"nu_documento3":null,"birthday3":null,"email3":null,"telefone3":null,"zipCode3":null,"address3":null,"city3":null,"state3":null}]';
