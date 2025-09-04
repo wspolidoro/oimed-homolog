@@ -5,6 +5,8 @@ const SubClientes = require('../../schema/tb_sub_clientes.js');
 const Franqueado = require('../../schema/tb_franqueado.js');
 const Clientes = require('../../schema/tb_clientes.js');
 
+const { Op, Sequelize, literal } = require('sequelize');
+
 module.exports = {
     listParceiros: async (req, res) => {
         const linkFranqueado = await Franqueado.findAll({
@@ -17,17 +19,32 @@ module.exports = {
 
     },
     listDados: async (req, res) => {
+
+
+        const agora = new Date();
+        const mesAnterior = new Date(agora.getFullYear(), agora.getMonth() - 1, 1);
+        const inicioMesAnterior = new Date(mesAnterior.getFullYear(), mesAnterior.getMonth(), 1);
+        const fimMesAnterior = new Date(mesAnterior.getFullYear(), mesAnterior.getMonth() + 1, 0);
+
+
+
         //INDIVIDUAL
         const listClientes = await Clientes.findAll({
             where: {
                 id_franqueado: req.params.id,
                 cobertura: "individual",
                 //situacao: "ativo"
+                /*     dtAtivacao: {
+                        [Op.between]: [inicioMesAnterior, fimMesAnterior]
+                    },
+                    dtDesativacao: {
+                        [Op.between]: [inicioMesAnterior, fimMesAnterior]
+                    } */
             },
             attributes: ['id', 'nm_cliente', 'serviceType', 'dtDesativacao', 'cobertura', 'situacao'],
             raw: true
         });
-        
+
 
         const qtdaG = listClientes.filter(item => item.serviceType === "G" && item.situacao === "ativo").length;
         const qtdaP = listClientes.filter(item => item.serviceType === "P" && item.situacao === "ativo").length;
@@ -43,26 +60,33 @@ module.exports = {
             GSP: qtdaGSP
         };
 
- /*        const calcTotal = countPlans.reduce((acc, obj) => {
-            const total = Object.values(obj)[0];
-            return acc + total;
-        }, 0) */
+        /*        const calcTotal = countPlans.reduce((acc, obj) => {
+                   const total = Object.values(obj)[0];
+                   return acc + total;
+               }, 0) */
 
         const calcTotal = Object.values(countPlans).reduce((acc, total) => acc + total, 0);
 
-        console.log(listClientes)
+        //console.log(listClientes)
 
         const currentDeactivate = listClientes.filter(item => {
 
-            if(item.situacao === "ativo") return;
+           // if (item.situacao === "ativo") return;
 
             const data = new Date(item.dtDesativacao);
             const hoje = new Date();
+            const mesAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
 
-            const mesmoMes = data.getUTCFullYear() === hoje.getUTCFullYear() &&
-                data.getUTCMonth() === hoje.getUTCMonth();
+            const mesmoMes = data.getFullYear() === mesAnterior.getFullYear() &&
+                data.getMonth() === mesAnterior.getMonth();
 
-            console.log(mesmoMes)
+            /*  const data = new Date(item.dtDesativacao);
+             const hoje = new Date();
+ 
+             const mesmoMes = data.getUTCFullYear() === hoje.getUTCFullYear() &&
+                 data.getUTCMonth() === hoje.getUTCMonth();
+  */
+            console.log('very', mesmoMes)
             return mesmoMes;
 
         })
@@ -72,7 +96,7 @@ module.exports = {
             where: {
                 id_franqueado: req.params.id,
                 cobertura: "familiar",
-                cpf_titular: "titular"
+                cpf_titular: "titular",
                 //situacao: "ativo"
             },
             attributes: ['id', 'nm_cliente', 'serviceType', 'dtDesativacao', 'cobertura', 'situacao'],
@@ -93,11 +117,11 @@ module.exports = {
             GSP: qtdaGSPFamiliar
         };
 
-    /*     const calcTotalFamiliar = countPlansFamiliar.reduce((acc, obj) => {
-            const total = Object.values(obj)[0];
-            return acc + total;
-        }, 0)
- */
+        /*     const calcTotalFamiliar = countPlansFamiliar.reduce((acc, obj) => {
+                const total = Object.values(obj)[0];
+                return acc + total;
+            }, 0)
+     */
 
 
         const calcTotalFamiliar = Object.values(countPlansFamiliar).reduce((acc, total) => acc + total, 0);
@@ -106,13 +130,20 @@ module.exports = {
 
         const currentDeactivateFamiliar = listClientesFamiliar.filter(item => {
 
-            if(item.situacao === "ativo") return;
+           // if (item.situacao === "ativo") return;
 
-            const data = new Date(item.dtDesativacao);
+           const data = new Date(item.dtDesativacao);
             const hoje = new Date();
+            const mesAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
 
-            const mesmoMes = data.getUTCFullYear() === hoje.getUTCFullYear() &&
-                data.getUTCMonth() === hoje.getUTCMonth();
+            const mesmoMes = data.getFullYear() === mesAnterior.getFullYear() &&
+                data.getMonth() === mesAnterior.getMonth();
+
+            /*   const data = new Date(item.dtDesativacao);
+              const hoje = new Date();
+  
+              const mesmoMes = data.getUTCFullYear() === hoje.getUTCFullYear() &&
+                  data.getUTCMonth() === hoje.getUTCMonth(); */
 
             // console.log(mesmoMes)
             return mesmoMes;
@@ -120,7 +151,7 @@ module.exports = {
         })
 
 
-        console.log("insou",currentDeactivate)
+        console.log("insou", currentDeactivate, currentDeactivateFamiliar)
 
 
         res.json({
