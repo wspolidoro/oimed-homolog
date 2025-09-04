@@ -978,7 +978,7 @@ router.post('/franqueado/listunique', async (req, res) => {
 
 //buscar lista de clientes
 router.post('/franqueado/clientes/list', async (req, res) => {
-  console.log("kledisom", req.body.subpainel, typeof (req.query.subList), null)
+  console.log("kledisom", req.body.subpainel, typeof (req.query.subList), null, req.body.perfil)
   if (req.body.subpainel && req.query.subList !== "null") {
     const nmClientes = await SubClientes.findAll({
       where: { id_franqueado: req.body.id }
