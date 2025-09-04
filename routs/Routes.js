@@ -361,6 +361,7 @@ router.put('/franqueado/:clientId', async (req, res) => {
       perfil: 'guest',
       siteTitle: req.body.nome_projeto,
       siteEmail: req.body.email_projeto,
+      emailModel: parseInt(req.body.modelo_email),
       linkApple: req.body.link_app_ios,
       linkAndroid: req.body.link_app_android,
       //products: req.body.products,
