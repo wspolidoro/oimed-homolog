@@ -113,13 +113,13 @@ const Franqueado = sequelize.define('oi_franqueado', {
             },
         }
     },
-    
+
     siteTitle: {
         type: Sequelize.STRING(255),
         allowNull: true,
         unique: false
     },
-    
+
     siteEmail: {
         type: Sequelize.STRING(255),
         allowNull: true,
@@ -162,6 +162,18 @@ const Franqueado = sequelize.define('oi_franqueado', {
                 msg: "Esse campo não pode está vazio.."
             },
         }
+    },
+
+    precoIndividual: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+        unique: false,
+    },
+
+    precoFamiliar: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+        unique: false,
     },
 
     linkAndroid: {

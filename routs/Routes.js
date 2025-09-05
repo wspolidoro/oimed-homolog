@@ -327,6 +327,8 @@ router.post('/franqueado', async (req, res) => {
       siteTitle: req.body.nome_projeto,
       siteEmail: req.body.email_projeto,
       emailModel: parseInt(req.body.modelo_email),
+       precoIndividual: req.body["valor-individual"],
+      precoFamiliar: req.body["valor-familiar"],
       //products: req.body.products,
       subPaineis: req.body.sub_paineis,
       autoridade: 3
@@ -364,6 +366,8 @@ router.put('/franqueado/:clientId', async (req, res) => {
       emailModel: parseInt(req.body.modelo_email),
       linkApple: req.body.link_app_ios,
       linkAndroid: req.body.link_app_android,
+      precoIndividual: req.body["valor-individual"],
+      precoFamiliar: req.body["valor-familiar"],
       //products: req.body.products,
       subPaineis: req.body.sub_paineis,
       autoridade: 3

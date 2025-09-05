@@ -153,11 +153,18 @@ module.exports = {
 
         console.log("insou", currentDeactivate, currentDeactivateFamiliar)
 
+        const precos = await Franqueado.findOne({
+            where: { id: req.params.id },
+            attributes: ['precoIndividual', 'precoFamiliar'],
+            raw: true
+        })
+
 
         res.json({
             succes: true,
             individualPlan: { qtdaPlans: countPlans, totalRegister: calcTotal, totalInativates: currentDeactivate.length },
-            familiarPlan: { qtdaPlans: countPlansFamiliar, totalRegister: calcTotalFamiliar, totalInativates: currentDeactivateFamiliar.length }
+            familiarPlan: { qtdaPlans: countPlansFamiliar, totalRegister: calcTotalFamiliar, totalInativates: currentDeactivateFamiliar.length },
+            precos: precos
         });
 
     }
