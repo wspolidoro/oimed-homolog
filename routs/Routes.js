@@ -1032,14 +1032,36 @@ router.get('/franqueado/update/:id', async (req, res) => {
 //buscar cliente por id
 router.get('/buscar/cliente/:id', async (req, res) => {
   console.log(req.params.id)
-  if (!req.params.id) {
-    res.json({ success: false, message: "erro no identificador" })
+
+   if (!req.params.id) {
+    res.json({ success: false, message: "erro no identificador" });
+    return;
+  } 
+
+
+  if (req.query.subpainel === "true") {
+     const cliente = await SubClientes.findAll({
+      where: {
+        id: req.params.id
+      }
+    });
+
+    const dependentes = await SubClientes.findAll({
+      where: {
+        cpf_titular: cliente[0].dataValues.nu_documento
+      }
+    });
+    //console.log(cliente[0].dataValues.nu_documento)
+
+    res.json({ success: true, message: cliente, dependentes: dependentes })
   } else {
     const cliente = await Clientes.findAll({
       where: {
         id: req.params.id
       }
     });
+
+    console.log(req.query.subpainel, cliente)
 
     const dependentes = await Clientes.findAll({
       where: {
@@ -1316,7 +1338,7 @@ router.put('/beneficiaries/reactivate/:cpf', async (req, res) => {
       }
     })
 
-    console.log(uuidGet)
+    console.log(uuidGet, cpfinformed)
     const uuid = uuidGet[0].uuid;
     const retorno = await axios.put(`https://api.rapidoc.tech/tema/api/beneficiaries/${uuid}/reactivate`, "data", {
       headers: {
@@ -1905,7 +1927,7 @@ async function envioEmMassaTeste() {
 
   const emailsUsers = await Clientes.findAll({
     where: {
-      id_franqueado: 93
+      id_franqueado: 94
       //id: [5801, 5803, 5804, 5792, 5793, 5794, 5795]
       //id: 6087
     },
