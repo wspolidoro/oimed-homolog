@@ -78,7 +78,7 @@ module.exports = {
             const mesAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
 
             const mesmoMes = data.getFullYear() === mesAnterior.getFullYear() &&
-                data.getMonth() === mesAnterior.getMonth();
+                data.getMonth() === mesAnterior.getMonth() && item.situacao === "inativo";
 
             /*  const data = new Date(item.dtDesativacao);
              const hoje = new Date();
@@ -86,7 +86,7 @@ module.exports = {
              const mesmoMes = data.getUTCFullYear() === hoje.getUTCFullYear() &&
                  data.getUTCMonth() === hoje.getUTCMonth();
   */
-            console.log('very', mesmoMes)
+            //console.log('very', mesmoMes)
             return mesmoMes;
 
         })
@@ -126,7 +126,7 @@ module.exports = {
 
         const calcTotalFamiliar = Object.values(countPlansFamiliar).reduce((acc, total) => acc + total, 0);
 
-        console.log(listClientesFamiliar)
+        //console.log(listClientesFamiliar)
 
         const currentDeactivateFamiliar = listClientesFamiliar.filter(item => {
 
@@ -137,7 +137,7 @@ module.exports = {
             const mesAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
 
             const mesmoMes = data.getFullYear() === mesAnterior.getFullYear() &&
-                data.getMonth() === mesAnterior.getMonth();
+                data.getMonth() === mesAnterior.getMonth() && item.situacao === "inativo";
 
             /*   const data = new Date(item.dtDesativacao);
               const hoje = new Date();
@@ -150,8 +150,25 @@ module.exports = {
 
         })
 
+        const query = `
+  SELECT *
+  FROM oi_clientes
+  WHERE MONTH(dtDesativacao) = MONTH(CURDATE() - INTERVAL 1 MONTH)
+    AND YEAR(dtDesativacao) = YEAR(CURDATE() - INTERVAL 1 MONTH)
+    AND id_franqueado = 76
+    AND situacao = 'inativo'
+    AND cobertura = 'individual';
+`;
 
-        console.log("insou", currentDeactivate, currentDeactivateFamiliar)
+const clientes = await sequelize.query(query, {
+  type: Sequelize.QueryTypes.SELECT
+});
+
+console.log(clientes.length);
+
+
+
+        //console.log("insou", currentDeactivate, currentDeactivateFamiliar)
 
         const precos = await Franqueado.findOne({
             where: { id: req.params.id },
