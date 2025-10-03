@@ -4,6 +4,7 @@ const SubFranqueado = require('../../schema/tb_sub_franqueado');
 const SubClientes = require('../../schema/tb_sub_clientes.js');
 const Franqueado = require('../../schema/tb_franqueado.js');
 const Clientes = require('../../schema/tb_clientes.js');
+const Planos = require('../../schema/tb_planos.js');
 
 const { Op, Sequelize, literal } = require('sequelize');
 
@@ -149,7 +150,7 @@ module.exports = {
             return mesmoMes;
 
         })
-
+/* 
         const query = `
   SELECT *
   FROM oi_clientes
@@ -164,9 +165,37 @@ const clientes = await sequelize.query(query, {
   type: Sequelize.QueryTypes.SELECT
 });
 
-console.log(clientes.length);
+console.log(clientes.length); */
+
+const planosList = await Planos.findAll({
+    where: {
+        id_franqueado: req.params.id
+    },
+    raw: true
+});
+
+let val = (plano, tipo) => planosList.find(item => item.plano === plano && item.tipo === tipo);
 
 
+
+let typeG = Number(val('individual', 'G').valor) * Number(countPlans.G);
+let typeP = Number(val('individual', 'P').valor) * Number(countPlans.P);
+//let typeGP = Number(val('individual', 'GP').valor) * Number(countPlans.GP);
+let typeGS = Number(val('individual', 'GS').valor) * Number(countPlans.GS);
+let typeGSP = Number(val('individual', 'GSP').valor) * Number(countPlans.GSP);
+
+let typeGFamiliar = Number(val('familiar', 'G').valor) * Number(countPlansFamiliar.G);
+let typePFamiliar = Number(val('familiar', 'P').valor) * Number(countPlansFamiliar.P);
+//let typeGP = Number(val('familiar', 'GP').valor) * Number(countPlansFamiliar.GP);
+let typeGSFamiliar = Number(val('familiar', 'GS').valor) * Number(countPlansFamiliar.GS);
+let typeGSPFamiliar = Number(val('familiar', 'GSP').valor) * Number(countPlansFamiliar.GSP);
+
+let totalIndividual = typeG + typeP + typeGS + typeGSP;
+let totalFamiliar = typeGFamiliar + typePFamiliar + typeGSFamiliar + typeGSPFamiliar;
+
+console.log(planosList, totalIndividual, totalFamiliar, totalIndividual + totalFamiliar + Number(val('familiar', 'GSP').manutencao_mensal))
+
+//let typeGFamiliar = val('familiar', 'G').valor + countPlansFamiliar.G;
 
         //console.log("insou", currentDeactivate, currentDeactivateFamiliar)
 
@@ -181,7 +210,10 @@ console.log(clientes.length);
             succes: true,
             individualPlan: { qtdaPlans: countPlans, totalRegister: calcTotal, totalInativates: currentDeactivate.length },
             familiarPlan: { qtdaPlans: countPlansFamiliar, totalRegister: calcTotalFamiliar, totalInativates: currentDeactivateFamiliar.length },
-            precos: precos
+            precos: precos,
+            precoTotalIndividual: totalIndividual,
+            precoTotalFamiliar: totalFamiliar,
+            precoTotal: totalIndividual + totalFamiliar + Number(val('familiar', 'GSP').manutencao_mensal)
         });
 
     }
