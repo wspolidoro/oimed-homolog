@@ -122,7 +122,7 @@ Site: ${payment.site_venda || "-"}
           [Sequelize.Op.lt]: moment().subtract(1, 'months').add(1, 'days').endOf('day').toDate(), // 23:59:59 do dia
           //[Sequelize.Op.lte]: moment().add(1, 'days').toDate(), // Pagamentos vencendo em 1 dia
         }, */
-        reminderSent: false,
+        reminderSent: 0,
       },
       include: {
         model: Franqueado,  // Inclui o modelo 'Franqueado'
