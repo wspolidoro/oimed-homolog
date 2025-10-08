@@ -282,7 +282,7 @@ const Clientes = sequelize.define('oi_clientes', {
     reminderSent: {
         type: Sequelize.BOOLEAN,
         allowNull: true,
-        defaultValue: Sequelize.NOW
+        //defaultValue: Sequelize.NOW
     }
 
 });
