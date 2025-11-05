@@ -177,7 +177,7 @@ const planosList = await Planos.findAll({
 let val = (plano, tipo) => planosList.find(item => item.plano === plano && item.tipo === tipo);
 
 
-
+try{
 let typeG = Number(val('individual', 'G').valor) * Number(countPlans.G);
 let typeP = Number(val('individual', 'P').valor) * Number(countPlans.P);
 //let typeGP = Number(val('individual', 'GP').valor) * Number(countPlans.GP);
@@ -207,7 +207,7 @@ console.log(planosList, totalIndividual, totalFamiliar, totalIndividual + totalF
 
 
         res.json({
-            succes: true,
+            success: true,
             individualPlan: { qtdaPlans: countPlans, totalRegister: calcTotal, totalInativates: currentDeactivate.length },
             familiarPlan: { qtdaPlans: countPlansFamiliar, totalRegister: calcTotalFamiliar, totalInativates: currentDeactivateFamiliar.length },
             precos: precos,
@@ -215,6 +215,12 @@ console.log(planosList, totalIndividual, totalFamiliar, totalIndividual + totalF
             precoTotalFamiliar: totalFamiliar,
             precoTotal: totalIndividual + totalFamiliar + Number(val('familiar', 'GSP').manutencao_mensal)
         });
+} catch(err){
+    console.log('erro', err);
+    res.json({success: false, message: 'Erro ao calcular os valores.'});
+}
+
+
 
     }
 }

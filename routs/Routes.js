@@ -22,6 +22,8 @@ const Clientes = require('../schema/tb_clientes');
 const Rapidoc = require('../schema/tb_rapidoc');
 const SubFranqueado = require('../schema/tb_sub_franqueado');
 const SubClientes = require('../schema/tb_sub_clientes.js');
+const Planos = require('../schema/tb_planos.js');
+const { relacPlanos } = require('../schema/index.js');
 
 //controllers
 const cadastroNewForm = require('../controllers/cadastroClientes/cadastroNewForm');
@@ -311,6 +313,9 @@ router.post('/franqueado', async (req, res) => {
   try {
     await sequelize.sync();
 
+    console.log(req.body);
+
+
     const newFranqueado = await Franqueado.create({
       nome: req.body.nome,
       cpf: req.body.cpf,
@@ -327,12 +332,42 @@ router.post('/franqueado', async (req, res) => {
       siteTitle: req.body.nome_projeto,
       siteEmail: req.body.email_projeto,
       emailModel: parseInt(req.body.modelo_email),
-       precoIndividual: req.body["valor-individual"],
-      precoFamiliar: req.body["valor-familiar"],
+      //precoIndividual: req.body["valor-individual"],
+      //precoFamiliar: req.body["valor-familiar"],
       //products: req.body.products,
       subPaineis: req.body.sub_paineis,
       autoridade: 3
     });
+
+    const precos = await Promise.all(
+      Object.entries(req.body.individual).map(async ([key, value]) => {
+        const tipo = key.split('-')[1]; // ex: de "individual-p" vira "p"
+        return await Planos.create({
+          id_franqueado: newFranqueado.id,
+          plano: 'individual',
+          tipo,
+          valor: value, // pega o valor do campo correspondente
+          manutencao_mensal: 197
+        });
+      })
+    );
+
+    await Promise.all(
+      Object.entries(req.body.familiar).map(async ([key, value]) => {
+        const tipo = key.split('-')[1];
+        return await Planos.create({
+          id_franqueado: newFranqueado.id,
+          plano: 'familiar',
+          tipo,
+          valor: value,
+          manutencao_mensal: 197
+        });
+      })
+    );
+
+
+
+
 
     //console.log(req.body) 
 
@@ -377,7 +412,39 @@ router.put('/franqueado/:clientId', async (req, res) => {
       }
     });
 
-    //console.log(req.body) 
+    console.log(req.body);
+    const precos = await Promise.all(
+      Object.entries(req.body.individual).map(async ([key, value]) => {
+        const tipo = key.split('-')[1]; // ex: de "individual-p" vira "p"
+         console.log(tipo, value);
+        return await Planos.update({
+          valor: value, // pega o valor do campo correspondente
+        }, {
+          where: {
+            id_franqueado: req.params.clientId,
+            tipo: tipo,
+            plano: 'individual'
+          }
+        });
+      })
+    );
+
+    await Promise.all(
+      Object.entries(req.body.familiar).map(async ([key, value]) => {
+        const tipo = key.split('-')[1];
+        console.log(tipo, value);
+        return await Planos.update({
+          valor: value,
+        }, {
+          where: {
+            id_franqueado: req.params.clientId,
+            tipo: tipo,
+            plano: 'familiar'
+          }
+        });
+      })
+    );
+
 
     res.json(newFranqueado);
 
@@ -548,7 +615,7 @@ router.post('/franqueado/clientes', async (req, res) => {
 //rota de testes para atualizar dados de clientes
 router.put('/franqueado/clientes/update', async (req, res) => {
   try {
-    
+
 
     console.log("request de atualização", req.body);
 
@@ -596,21 +663,21 @@ router.put('/franqueado/clientes/update', async (req, res) => {
       }
     });
 
- 
 
-   // console.log("mycliente", numericCpfNumber)
+
+    // console.log("mycliente", numericCpfNumber)
 
     try {
-         const selectCobertura = await Clientes.update({
-      cobertura: req.body.cobertura,
-    }, {
-      where: {
-        [Op.or]: [
-          { nu_documento: numericCpfNumber },
-          { cpf_titular: numericCpfNumber }
-        ]
-      }
-    });
+      const selectCobertura = await Clientes.update({
+        cobertura: req.body.cobertura,
+      }, {
+        where: {
+          [Op.or]: [
+            { nu_documento: numericCpfNumber },
+            { cpf_titular: numericCpfNumber }
+          ]
+        }
+      });
       criarDependenteGeral()
     } catch (err) {
       console.log("Erro ao atualizar cliente:", err);
@@ -960,7 +1027,12 @@ router.post('/cliente/filter/plan/:plan', async (req, res) => {
 
 //buscar lista de franqueados
 router.get('/franqueado/list', async (req, res) => {
-  const linkFranqueado = await Franqueado.findAll();
+  const linkFranqueado = await Franqueado.findAll({
+    include: [{
+      model: relacPlanos,
+      as: 'planos'
+    }]
+  });
   countClients();
 
   res.json(linkFranqueado);
@@ -1033,14 +1105,14 @@ router.get('/franqueado/update/:id', async (req, res) => {
 router.get('/buscar/cliente/:id', async (req, res) => {
   console.log(req.params.id)
 
-   if (!req.params.id) {
+  if (!req.params.id) {
     res.json({ success: false, message: "erro no identificador" });
     return;
-  } 
+  }
 
 
   if (req.query.subpainel === "true") {
-     const cliente = await SubClientes.findAll({
+    const cliente = await SubClientes.findAll({
       where: {
         id: req.params.id
       }
