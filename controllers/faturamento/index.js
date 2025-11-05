@@ -72,7 +72,7 @@ module.exports = {
 
         const currentDeactivate = listClientes.filter(item => {
 
-           // if (item.situacao === "ativo") return;
+            // if (item.situacao === "ativo") return;
 
             const data = new Date(item.dtDesativacao);
             const hoje = new Date();
@@ -131,9 +131,9 @@ module.exports = {
 
         const currentDeactivateFamiliar = listClientesFamiliar.filter(item => {
 
-           // if (item.situacao === "ativo") return;
+            // if (item.situacao === "ativo") return;
 
-           const data = new Date(item.dtDesativacao);
+            const data = new Date(item.dtDesativacao);
             const hoje = new Date();
             const mesAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
 
@@ -150,75 +150,75 @@ module.exports = {
             return mesmoMes;
 
         })
-/* 
-        const query = `
-  SELECT *
-  FROM oi_clientes
-  WHERE MONTH(dtDesativacao) = MONTH(CURDATE() - INTERVAL 1 MONTH)
-    AND YEAR(dtDesativacao) = YEAR(CURDATE() - INTERVAL 1 MONTH)
-    AND id_franqueado = 76
-    AND situacao = 'inativo'
-    AND cobertura = 'individual';
-`;
-
-const clientes = await sequelize.query(query, {
-  type: Sequelize.QueryTypes.SELECT
-});
-
-console.log(clientes.length); */
-
-const planosList = await Planos.findAll({
-    where: {
-        id_franqueado: req.params.id
-    },
-    raw: true
-});
-
-let val = (plano, tipo) => planosList.find(item => item.plano === plano && item.tipo === tipo);
-
-
-try{
-let typeG = Number(val('individual', 'G').valor) * Number(countPlans.G);
-let typeP = Number(val('individual', 'P').valor) * Number(countPlans.P);
-//let typeGP = Number(val('individual', 'GP').valor) * Number(countPlans.GP);
-let typeGS = Number(val('individual', 'GS').valor) * Number(countPlans.GS);
-let typeGSP = Number(val('individual', 'GSP').valor) * Number(countPlans.GSP);
-
-let typeGFamiliar = Number(val('familiar', 'G').valor) * Number(countPlansFamiliar.G);
-let typePFamiliar = Number(val('familiar', 'P').valor) * Number(countPlansFamiliar.P);
-//let typeGP = Number(val('familiar', 'GP').valor) * Number(countPlansFamiliar.GP);
-let typeGSFamiliar = Number(val('familiar', 'GS').valor) * Number(countPlansFamiliar.GS);
-let typeGSPFamiliar = Number(val('familiar', 'GSP').valor) * Number(countPlansFamiliar.GSP);
-
-let totalIndividual = typeG + typeP + typeGS + typeGSP;
-let totalFamiliar = typeGFamiliar + typePFamiliar + typeGSFamiliar + typeGSPFamiliar;
-
-console.log(planosList, totalIndividual, totalFamiliar, totalIndividual + totalFamiliar + Number(val('familiar', 'GSP').manutencao_mensal))
-
-//let typeGFamiliar = val('familiar', 'G').valor + countPlansFamiliar.G;
-
-        //console.log("insou", currentDeactivate, currentDeactivateFamiliar)
-
-        const precos = await Franqueado.findOne({
-            where: { id: req.params.id },
-            attributes: ['precoIndividual', 'precoFamiliar'],
-            raw: true
-        })
-
-
-        res.json({
-            success: true,
-            individualPlan: { qtdaPlans: countPlans, totalRegister: calcTotal, totalInativates: currentDeactivate.length },
-            familiarPlan: { qtdaPlans: countPlansFamiliar, totalRegister: calcTotalFamiliar, totalInativates: currentDeactivateFamiliar.length },
-            precos: precos,
-            precoTotalIndividual: totalIndividual,
-            precoTotalFamiliar: totalFamiliar,
-            precoTotal: totalIndividual + totalFamiliar + Number(val('familiar', 'GSP').manutencao_mensal)
+        /* 
+                const query = `
+          SELECT *
+          FROM oi_clientes
+          WHERE MONTH(dtDesativacao) = MONTH(CURDATE() - INTERVAL 1 MONTH)
+            AND YEAR(dtDesativacao) = YEAR(CURDATE() - INTERVAL 1 MONTH)
+            AND id_franqueado = 76
+            AND situacao = 'inativo'
+            AND cobertura = 'individual';
+        `;
+        
+        const clientes = await sequelize.query(query, {
+          type: Sequelize.QueryTypes.SELECT
         });
-} catch(err){
-    console.log('erro', err);
-    res.json({success: false, message: 'Erro ao calcular os valores.'});
-}
+        
+        console.log(clientes.length); */
+
+        const planosList = await Planos.findAll({
+            where: {
+                id_franqueado: req.params.id
+            },
+            raw: true
+        });
+
+        let val = (plano, tipo) => planosList.find(item => item.plano === plano && item.tipo === tipo);
+
+
+        try {
+            let typeG = Number(val('individual', 'g').valor) * Number(countPlans.G);
+            let typeP = Number(val('individual', 'p').valor) * Number(countPlans.P);
+            //let typeGP = Number(val('individual', 'GP').valor) * Number(countPlans.GP);
+            let typeGS = Number(val('individual', 'gs').valor) * Number(countPlans.GS);
+            let typeGSP = Number(val('individual', 'gsp').valor) * Number(countPlans.GSP);
+
+            let typeGFamiliar = Number(val('familiar', 'g').valor) * Number(countPlansFamiliar.G);
+            let typePFamiliar = Number(val('familiar', 'p').valor) * Number(countPlansFamiliar.P);
+            //let typeGP = Number(val('familiar', 'GP').valor) * Number(countPlansFamiliar.GP);
+            let typeGSFamiliar = Number(val('familiar', 'gs').valor) * Number(countPlansFamiliar.GS);
+            let typeGSPFamiliar = Number(val('familiar', 'gsp').valor) * Number(countPlansFamiliar.GSP);
+
+            let totalIndividual = typeG + typeP + typeGS + typeGSP;
+            let totalFamiliar = typeGFamiliar + typePFamiliar + typeGSFamiliar + typeGSPFamiliar;
+
+            console.log(planosList, totalIndividual, totalFamiliar, totalIndividual + totalFamiliar + Number(val('familiar', 'gsp').manutencao_mensal))
+
+            //let typeGFamiliar = val('familiar', 'G').valor + countPlansFamiliar.G;
+
+            //console.log("insou", currentDeactivate, currentDeactivateFamiliar)
+
+            const precos = await Franqueado.findOne({
+                where: { id: req.params.id },
+                attributes: ['precoIndividual', 'precoFamiliar'],
+                raw: true
+            })
+
+
+            res.json({
+                success: true,
+                individualPlan: { qtdaPlans: countPlans, totalRegister: calcTotal, totalInativates: currentDeactivate.length },
+                familiarPlan: { qtdaPlans: countPlansFamiliar, totalRegister: calcTotalFamiliar, totalInativates: currentDeactivateFamiliar.length },
+                precos: precos,
+                precoTotalIndividual: totalIndividual,
+                precoTotalFamiliar: totalFamiliar,
+                precoTotal: totalIndividual + totalFamiliar + Number(val('familiar', 'gsp').manutencao_mensal)
+            });
+        } catch (err) {
+            console.log('erro', err);
+            res.json({ success: false, message: 'Erro ao calcular os valores.' });
+        }
 
 
 
