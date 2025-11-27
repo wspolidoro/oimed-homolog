@@ -1,0 +1,4 @@
+{
+  "watch": ["."],
+  "ignore": ["progresso.json", "erros.json"]
+}

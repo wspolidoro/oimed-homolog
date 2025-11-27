@@ -4,17 +4,23 @@ const Sequelize = require('sequelize');
     host: 'localhost',
     port: 3307
 }); */
-const sequelize = new Sequelize('painelw_oimed_prod', 'painelw_painelw', '@W}oI[0h!obE', {
+/*  const sequelize = new Sequelize('painelw_oimed_prod', 'painelw_painelw', '@W}oI[0h!obE', {
     dialect: 'mysql',
     host: '51.222.94.129',
     port: 3306
-});  
+});  */   
 
+  const sequelize = new Sequelize('painelw_oimed_api', 'painelw_painelw', '@W}oI[0h!obE', {
+    dialect: 'mysql',
+    host: '51.222.94.129',
+    port: 3306
+}); 
+ 
 /* const sequelize = new Sequelize('painelw_oimed_prod', 'painelw_painelw', '2&7L$J:.^m3/', {
     dialect: 'mysql',
     host: '62.171.189.28',
     port: 3306
-});   */
+});    */
 
 /* const sequelize = new Sequelize('oimedint', 'oimeduser', 'pass@oimed', {
     dialect: 'mysql',

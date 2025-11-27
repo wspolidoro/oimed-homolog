@@ -24,6 +24,7 @@ const SubFranqueado = require('../schema/tb_sub_franqueado');
 const SubClientes = require('../schema/tb_sub_clientes.js');
 const Planos = require('../schema/tb_planos.js');
 const { relacPlanos } = require('../schema/index.js');
+const Sleeping = require('../schema/tb_sleeping');
 
 //controllers
 const cadastroNewForm = require('../controllers/cadastroClientes/cadastroNewForm');
@@ -1086,7 +1087,15 @@ router.post('/franqueado/clientes/list', async (req, res) => {
 
     res.send(nmClientes)
   } else {
-    const Cliente = await Clientes.findAll();
+    const Cliente = await Clientes.findAll({
+    /*   where: {
+            nu_documento: '79082278057'
+        }, */
+       include: [{
+            model: Sleeping,
+            required: false // true = INNER JOIN / false = LEFT JOIN
+        }]
+    });
 
     res.json(Cliente);
   }

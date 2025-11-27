@@ -1,6 +1,7 @@
 const Sequelize = require('sequelize');
 const { sequelize, sandbox } = require('../db');
 const Franqueado = require('./tb_franqueado');
+const Sleepings = require('./tb_sleeping');
 
 const Clientes = sequelize.define('oi_clientes', {
     id: {
@@ -8,6 +9,17 @@ const Clientes = sequelize.define('oi_clientes', {
         autoIncrement: true,
         allowNull: false,
         primaryKey: true
+    },
+
+    uuid: {
+        type: Sequelize.STRING(255),
+        allowNull: false,
+        unique: false,
+        validate: {
+            notEmpty: {
+                msg: "Esse campo não pode está vazio.."
+            },
+        }
     },
 
     nm_cliente: {
@@ -255,7 +267,7 @@ const Clientes = sequelize.define('oi_clientes', {
             },
         }
     },
-    
+
     cpf_titular: {
         type: Sequelize.STRING(11),
         allowNull: false,
@@ -292,5 +304,9 @@ Clientes.belongsTo(Franqueado, {
     foreignKey: 'id_franqueado',
     targetKey: 'id'
 });
+
+Clientes.hasOne(Sleepings, { foreignKey: "idVida", sourceKey: "nu_documento" });
+Sleepings.belongsTo(Clientes, { foreignKey: "idVida", targetKey: "nu_documento" });
+
 
 module.exports = Clientes;
