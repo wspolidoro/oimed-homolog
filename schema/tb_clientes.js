@@ -13,7 +13,7 @@ const Clientes = sequelize.define('oi_clientes', {
 
     uuid: {
         type: Sequelize.STRING(255),
-        allowNull: false,
+        allowNull: true,
         unique: false,
         validate: {
             notEmpty: {
