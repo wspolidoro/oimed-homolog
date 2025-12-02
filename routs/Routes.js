@@ -417,7 +417,7 @@ router.put('/franqueado/:clientId', async (req, res) => {
     const precos = await Promise.all(
       Object.entries(req.body.individual).map(async ([key, value]) => {
         const tipo = key.split('-')[1]; // ex: de "individual-p" vira "p"
-         console.log(tipo, value);
+        console.log(tipo, value);
         return await Planos.update({
           valor: value, // pega o valor do campo correspondente
         }, {
@@ -1088,13 +1088,13 @@ router.post('/franqueado/clientes/list', async (req, res) => {
     res.send(nmClientes)
   } else {
     const Cliente = await Clientes.findAll({
-    /*   where: {
-            nu_documento: '79082278057'
-        }, */
-       include: [{
-            model: Sleeping,
-            required: false // true = INNER JOIN / false = LEFT JOIN
-        }]
+      /*   where: {
+              nu_documento: '79082278057'
+          }, */
+      include: [{
+        model: Sleeping,
+        required: false // true = INNER JOIN / false = LEFT JOIN
+      }]
     });
 
     res.json(Cliente);
@@ -1171,6 +1171,24 @@ router.get('/clientes/list', async (req, res) => {
 //buscar cliente
 router.post('/clientes/seacrh/list', async (req, res) => {
   const { id, nu_documento } = req.body;
+
+  if (id == 2) {
+    const nmClientes = await Clientes.findAll({
+      where: {
+        [Op.or]: [
+          { nm_cliente: { [Op.like]: `${nu_documento}%` } },
+          { nu_documento: { [Op.like]: `${nu_documento}%` } }
+        ]
+      }
+    });
+    console.log(nmClientes);
+    if (nmClientes.length > 0) {
+      return res.json(nmClientes)
+    } else {
+      return res.json({ "success": false, "message": "Cliente não encontrado.." });
+    }
+  }
+
   const nmClientes = await Clientes.findAll({
     where: {
 
