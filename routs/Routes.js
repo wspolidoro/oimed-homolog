@@ -1056,7 +1056,7 @@ router.post('/franqueado/listunique', async (req, res) => {
 
 //buscar lista de clientes
 router.post('/franqueado/clientes/list', async (req, res) => {
-  console.log("kledisom", req.body.subpainel, typeof (req.query.subList), null, req.body.perfil)
+  // console.log("kledisom", req.body.subpainel, typeof (req.query.subList), null, req.body.perfil)
   if (req.body.subpainel && req.query.subList !== "null") {
     const nmClientes = await SubClientes.findAll({
       where: { id_franqueado: req.body.id }
@@ -1179,9 +1179,13 @@ router.post('/clientes/seacrh/list', async (req, res) => {
           { nm_cliente: { [Op.like]: `${nu_documento}%` } },
           { nu_documento: { [Op.like]: `${nu_documento}%` } }
         ]
-      }
+      },
+      include: [{
+        model: Sleeping,
+        required: false // true = INNER JOIN / false = LEFT JOIN
+      }]
     });
-    console.log(nmClientes);
+
     if (nmClientes.length > 0) {
       return res.json(nmClientes)
     } else {
