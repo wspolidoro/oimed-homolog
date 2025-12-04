@@ -380,7 +380,7 @@ router.post('/franqueado', async (req, res) => {
 
 });
 
-//rota de testes para adicionar franqueados
+//rota de testes para atualizar franqueados
 router.put('/franqueado/:clientId', async (req, res) => {
   try {
 
@@ -389,7 +389,7 @@ router.put('/franqueado/:clientId', async (req, res) => {
       cpf: req.body.cpf,
       telefone: req.body.telefone,
       email: req.body.email,
-      password: faker.string.hexadecimal({ length: 12 }),
+      //password: faker.string.hexadecimal({ length: 12 }),
       total_clientes: '0',
       vendas: '0',
       dado_banc: req.body.nu_banco,
