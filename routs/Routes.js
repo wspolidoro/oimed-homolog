@@ -951,6 +951,20 @@ router.post('/franqueado/filter', async (req, res) => {
 //buscar cliente por status
 router.post('/cliente/filter/status/:status', async (req, res) => {
   let statusParam = req.params.status;
+  let idFranqueado = req.body.idFranqueado;
+
+  const verificarFranqueado = await Franqueado.findOne({
+    where: {
+      id: idFranqueado
+    }
+  });
+
+  if (!verificarFranqueado) {
+    idFranqueado = req.body.id;
+  } else {
+    idFranqueado = req.body.idFranqueado;
+  }
+
   try {
     /*   const situacaoAtual = await Clientes.findAll({
         where: {
@@ -962,8 +976,12 @@ router.post('/cliente/filter/status/:status', async (req, res) => {
     const situacaoAtual = await Clientes.findAll({
       where: {
         situacao: statusParam,
-        id_franqueado: req.body.id
+        id_franqueado: idFranqueado
       },
+      include: [{
+        model: Sleeping,
+        required: false
+      }],
       order: [
         // COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento) ASC
         [literal(`COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento)`), 'ASC'],
