@@ -1264,7 +1264,7 @@ router.post('/clientes/seacrh/list', async (req, res) => {
     // PERFIS NORMAIS
     const nmClientes = await Clientes.findAll({
       where: {
-        //id_franqueado: id,
+        id_franqueado: id,
         [Op.or]: [
           { nm_cliente: { [Op.like]: `${nu_documento}%` } },
           { nu_documento: { [Op.like]: `%${nu_documento}%` } }
