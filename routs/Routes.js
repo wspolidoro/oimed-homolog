@@ -35,6 +35,7 @@ const yampi = require('../controllers/yampi/index.js');
 const faturamento = require('../controllers/faturamento/index.js');
 const { webhookActivate, webhookInactivate } = require('../controllers/auto_ativacao/webhook.js');
 const webhook = require('../controllers/webhook/index.js');
+const loginConsulta = require('../controllers/login/login-consulta.js');
 
 
 
@@ -1172,12 +1173,13 @@ router.get('/clientes/list', async (req, res) => {
 router.post('/clientes/seacrh/list', async (req, res) => {
   const { id, nu_documento } = req.body;
 
-  if (id == 2) {
+  if (id == 2 || id == 125) {
     const nmClientes = await Clientes.findAll({
       where: {
         [Op.or]: [
-          { nm_cliente: { [Op.like]: `${nu_documento}%` } },
-          { nu_documento: { [Op.like]: `${nu_documento}%` } }
+          { id_franqueado: { [Op.like]: `${nu_documento}` } },
+        /*   { nm_cliente: { [Op.like]: `${nu_documento}%` } },
+          { nu_documento: { [Op.like]: `${nu_documento}%` } }   */
         ]
       },
       include: [{
@@ -1199,9 +1201,7 @@ router.post('/clientes/seacrh/list', async (req, res) => {
       [Op.or]: [
         { nm_cliente: { [Op.like]: `${nu_documento}%` } },
         { nu_documento: { [Op.like]: `%${nu_documento}%` } }
-      ]
-
-      , // req.body.nu_documento
+      ], // req.body.nu_documento
       id_franqueado: id
     }
   });
@@ -2069,6 +2069,9 @@ router.get('/newFeat', (req, res) => {
   })
 })
 
+
+//SSO integrado
+router.post('/login/consulta', loginConsulta.loginConsulta);
 
 module.exports = router;
 

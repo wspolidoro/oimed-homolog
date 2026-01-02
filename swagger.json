@@ -299,11 +299,16 @@
                                        "cpfTitular": {
                                         "type": "string",
                                         "description": "cpf do titular, se for um dependente. se não for um dependente repetir o nu_documento"
+                                    },
+                                       "idParceiro": {
+                                        "type": "string",
+                                        "description": "id do parceiro, se for um dependente. se não for um dependente repetir o nu_documento"
                                     }
                                 },
                                 "required": [
                                     "nm_cliente",
-                                    "nu_documento"
+                                    "nu_documento",
+                                    "idParceiro"
                                 ]
                             }
                         }
@@ -482,6 +487,128 @@
                             "type": "string",
                             "description": "cpf do cliente (Apenas numeros)",
                             "default": "12345678910"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Bad request"
+                    },
+                    "404": {
+                        "description": "Error: Not Found"
+                    },
+                    "500": {
+                        "description": "Erro interno"
+                    }
+                }
+            }
+        },
+        "/oimed/specialties": {
+            "get": {
+                "tags": [
+                    "Agendamento"
+                ],
+                "summary": "Rota para consultar especialidades",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Bad request"
+                    },
+                    "404": {
+                        "description": "Error: Not Found"
+                    },
+                    "500": {
+                        "description": "Erro interno"
+                    }
+                },
+                "description": "Este endpoint realiza uma busca no banco de dados para listar todas as especialidades médicas ou de serviço que estão ativas e disponíveis para agendamento ou visualização."
+            }
+        },
+          "/oimed/specialty-availability": {
+            "get": {
+                "tags": [
+                    "Agendamento"
+                ],
+                "summary": "Rota para consultar disponibilidade por especialidade",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Bad request"
+                    },
+                    "404": {
+                        "description": "Error: Not Found"
+                    },
+                    "500": {
+                        "description": "Erro interno"
+                    }
+                },
+                "description": "Lista todos os horários disponíveis em dado período, para determinada especialidade.\n\n**Parâmetros obrigatórios:**\n- dateInitial: Data inicial do período de busca (formato: DD-MM-YYYY)\n- dateFinal: Data final do período de busca (formato: DD-MM-YYYY)\n- specialtyUuid: UUID da especialidade médica ou de serviço \n- beneficiaryUuid: cpf do cliente**"
+            }
+        },
+          "/oimed/appointments": {
+            "post": {
+                "tags": [
+                    "Agendamento"
+                ],
+                "summary": "Rota para criar agendamentos",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    },
+                    "401": {
+                        "description": "Bad request"
+                    },
+                    "404": {
+                        "description": "Error: Not Found"
+                    },
+                    "500": {
+                        "description": "Erro interno"
+                    }
+                }
+            }
+        },
+          "/oimed/sso/callback/{cpf}": {
+            "post": {
+                "tags": [
+                    "Autenticação"
+                ],
+                "summary": "Rota para autenticação via SSO",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "cpf",
+                        "type": "string",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "description": "cpf do cliente"
                         }
                     }
                 ],

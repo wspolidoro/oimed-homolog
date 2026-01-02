@@ -33,7 +33,7 @@ module.exports = {
         const uuid = id;
 
         try {
-        
+
             const retorno = await axios.put(`${process.env.API_URL}/beneficiaries/${uuid}/reactivate`, "data", {
                 headers: {
                     'clientId': process.env.CLIENT_ID,
@@ -57,45 +57,56 @@ module.exports = {
 
     delete: async (id) => {
         const cpf = id;
+        console.log(id, `${process.env.API_URL}/beneficiaries/${id}`)
 
         try {
-          /*   const response = await axios.get(`${process.env.API_URL}/beneficiaries/${cpf}`, {
-                headers: {
-                    'clientId': process.env.CLIENT_ID,
-                    'Authorization': process.env.AUTHORIZATION,
-                    'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
-                }
-            });
+            /*   const response = await axios.get(`${process.env.API_URL}/beneficiaries/${cpf}`, {
+                  headers: {
+                      'clientId': process.env.CLIENT_ID,
+                      'Authorization': process.env.AUTHORIZATION,
+                      'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+                  }
+              });
+  
+  
+              if (response.data.success == false) {
+                  console.log(response.data)
+              } else {
+   */
 
-
-            if (response.data.success == false) {
-                console.log(response.data)
-            } else {
- */
-
-                try {
-                    //const uuid = response.data.beneficiary.uuid;
-                    const retorno = await axios.delete(`${process.env.API_URL}/beneficiaries/${id}`, {
-                        headers: {
-                            'clientId': process.env.CLIENT_ID,
-                            'Authorization': process.env.AUTHORIZATION,
-                            'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
-                        }
-                    });
-                    return retorno.data;
-                    if (retorno.data.success === true) {
-                        //res.json(retorno.data)
-                    } else {
-                        //res.json(retorno.data)
+            try {
+ /*                const uuid = await axios.get(`${process.env.API_URL}/beneficiaries/${id}`, {
+                    headers: {
+                        'clientId': process.env.CLIENT_ID,
+                        'Authorization': process.env.AUTHORIZATION,
+                        'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
                     }
-                } catch (err) {
-                    console.log("testando", err)
+                }); */
+
+//uuid.data.beneficiary.uuid
+                //const uuid = response.data.beneficiary.uuid;
+                const retorno = await axios.delete(`${process.env.API_URL}/beneficiaries/${id}`, {
+                    headers: {
+                        'clientId': process.env.CLIENT_ID,
+                        'Authorization': process.env.AUTHORIZATION,
+                        'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+                    }
+                });
+                return retorno.data;
+                if (retorno.data.success === true) {
+                    //res.json(retorno.data)
+                } else {
+                    //res.json(retorno.data)
                 }
+            } catch (err) {
+                console.log("testando", err.response.data)
+                return 403;
+            }
             //}
             /*  */
         } catch (err) {
 
-            console.log("caminho do erro: crud.js linha 103", err.message)
+            console.log("caminho do erro: crud.js linha 103", err.message, `${process.env.API_URL}/beneficiaries/${id}`)
         }
     },
 };

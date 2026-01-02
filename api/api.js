@@ -677,4 +677,96 @@ routerApi.post('/franqueado/login', auth, async (req, res) => {
 
 });
 
+//buscar especialidades
+routerApi.get('/oimed/specialties', auth, async (req, res) => {
+    const response = await axios.get(`${process.env.API_URL}/specialties`, {
+        headers: {
+            'clientId': process.env.CLIENT_ID,
+            'Authorization': process.env.AUTHORIZATION,
+            'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+        }
+    });
+
+
+    res.status(200);
+    res.json({ success: true, data: response.data });
+});
+
+//buscar disponibilidade por especialidade
+routerApi.post('/oimed/specialty-availability', auth, async (req, res) => {
+    const { dateInitial, dateFinal, beneficiaryUuid, specialtyUuid } = req.body;
+    try {
+        const response = await axios.get(`${process.env.API_URL}/specialty-availability?specialtyUuid=${specialtyUuid}&dateInitial=${dateInitial}&dateFinal=${dateFinal}&beneficiaryUuid=${beneficiaryUuid}`, {
+            headers: {
+                'clientId': process.env.CLIENT_ID,
+                'Authorization': process.env.AUTHORIZATION,
+                'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+            }
+        });
+
+        res.status(200);
+        res.json({ success: true, data: response.data });
+    } catch (error) {
+        console.log(error.message)
+        console.log(`${process.env.API_URL}/specialty-availability?specialtyUuid=${specialtyUuid}&dateInitial=${dateInitial}&dateFinal=${dateFinal}&beneficiaryUuid=${beneficiaryUuid}`)
+
+        res.status(500).json({ success: false, message: error.message });
+    }
+
+})
+
+//rota para criar agendamentos
+routerApi.post('/oimed/appointments', auth, async (req, res) => {
+    const { beneficiaryUuid, availabilityUuid, specialtyUuid, approveAdditionalPayment } = req.body;
+    try {
+        const response = await axios.get(`${process.env.API_URL}/appointments`, {
+            "beneficiaryUuid": beneficiaryUuid,
+            "availabilityUuid": availabilityUuid,
+            "specialtyUuid": specialtyUuid,
+            "approveAdditionalPayment": approveAdditionalPayment
+        }, {
+            headers: {
+                'clientId': process.env.CLIENT_ID,
+                'Authorization': process.env.AUTHORIZATION,
+                'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+            }
+        });
+
+        res.status(200);
+        res.json({ success: true, data: response.data });
+    } catch (error) {
+        console.log(error.message)
+
+        res.status(500).json({ success: false, message: error.message });
+    }
+
+})
+
+//rota para realizar SSO
+routerApi.post('/oimed/sso/callback/:id', auth, async (req, res) => {
+    const beneficiaryUuid = req.params.id;
+
+
+
+    if (!beneficiaryUuid || beneficiaryUuid === "string") {
+        return res.status(400).json({ success: false, message: "ID inválido" });
+    }
+
+    const response = await axios.get(`${process.env.API_URL}/beneficiaries/${beneficiaryUuid}`, {
+        headers: {
+            'clientId': process.env.CLIENT_ID,
+            'Authorization': process.env.AUTHORIZATION,
+            'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+        }
+    });
+
+    if (response.data.message && response.data.message === "Beneficiário não encontrado.") {
+        return res.status(404).json({ success: false, message: "Beneficiário não encontrado" });
+    }
+    const uuid = response.data.beneficiary.uuid;
+
+    res.status(200).json({ success: true, message: "Autenticação realizada com sucesso", urlRedirect: `https://oimed.rapidoc.tech/${process.env.CLIENT_ID}/beneficiary/${uuid}` });
+
+})
+
 module.exports = routerApi;
