@@ -1113,7 +1113,7 @@ router.get('/franqueado/update/:id', async (req, res) => {
 
 //buscar cliente por id
 router.get('/buscar/cliente/:id', async (req, res) => {
-  console.log(req.params.id)
+  console.log("line: 1116", req.params.id)
 
   if (!req.params.id) {
     res.json({ success: false, message: "erro no identificador" });
@@ -1170,7 +1170,7 @@ router.get('/clientes/list', async (req, res) => {
 });
 
 //buscar cliente
-router.post('/clientes/seacrh/list', async (req, res) => {
+/* router.post('/clientes/seacrh/list', async (req, res) => {
   const { id, nu_documento } = req.body;
 
   if (id == 2 || id == 125) {
@@ -1178,8 +1178,8 @@ router.post('/clientes/seacrh/list', async (req, res) => {
       where: {
         [Op.or]: [
           { id_franqueado: { [Op.like]: `${nu_documento}` } },
-        /*   { nm_cliente: { [Op.like]: `${nu_documento}%` } },
-          { nu_documento: { [Op.like]: `${nu_documento}%` } }   */
+          { nm_cliente: { [Op.like]: `${nu_documento}%` } },
+          { nu_documento: { [Op.like]: `${nu_documento}%` } }  
         ]
       },
       include: [{
@@ -1214,6 +1214,86 @@ router.post('/clientes/seacrh/list', async (req, res) => {
 
 
 });
+ */
+
+// buscar cliente
+router.post('/clientes/seacrh/list', async (req, res) => {
+  try {
+    const { id, nu_documento } = req.body;
+
+    // PERFIS ESPECIAIS
+    if (id == 2 || id == 125) {
+
+      // 1️⃣ PRIMEIRO: tenta pelo id_franqueado
+      let nmClientes = await Clientes.findAll({
+        where: {
+          id_franqueado: nu_documento
+        },
+        include: [{
+          model: Sleeping,
+          required: false
+        }]
+      });
+
+      // 2️⃣ SE NÃO ENCONTRAR, tenta por nome ou documento
+      if (nmClientes.length === 0) {
+        nmClientes = await Clientes.findAll({
+          where: {
+            [Op.or]: [
+              { nm_cliente: { [Op.like]: `${nu_documento}%` } },
+              { nu_documento: { [Op.like]: `${nu_documento}%` } }
+            ]
+          },
+          include: [{
+            model: Sleeping,
+            required: false
+          }]
+        });
+      }
+
+      if (nmClientes.length > 0) {
+        return res.json(nmClientes);
+      }
+
+      return res.json({
+        success: false,
+        message: "Cliente não encontrado."
+      });
+    }
+
+    // PERFIS NORMAIS
+    const nmClientes = await Clientes.findAll({
+      where: {
+        id_franqueado: id,
+        [Op.or]: [
+          { nm_cliente: { [Op.like]: `${nu_documento}%` } },
+          { nu_documento: { [Op.like]: `%${nu_documento}%` } }
+        ]
+      }
+    });
+
+    if (nmClientes.length > 0) {
+      return res.json(nmClientes);
+    }
+
+    return res.json({
+      success: false,
+      message: "Usuário não encontrado."
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Erro interno no servidor."
+    });
+  }
+});
+
+
+
+
+
 
 //buscar cliente por cpf
 router.get('/clientes/search/list/:cpf', async (req, res) => {

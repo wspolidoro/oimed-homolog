@@ -7,6 +7,7 @@ const port = process.env.PORT || 3035;
 const rout = require('./routs/Routes');
 const routerApi = require('./api/api');
 const routerSandbox = require('./api/sandbox');
+const fs = require('fs');
 
 //debbug
 const sendMailError = require('./routs/sendMailer.js');
@@ -76,6 +77,8 @@ testConnection(); */
 async function fallAsleep(cpf, uuid) {
     const resultado = await dormir.delete(uuid);
 
+    console.log("dasadaadasdasdasd", resultado)
+
     try {
         if (!resultado) {
             console.log("erro: ", resultado);
@@ -132,17 +135,31 @@ async function massInactivation() {
         }]
     });
 
- 
+
 
     function delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+    const mass = require('./mass.json');
+
+    const filePath = path.join(__dirname, 'mass.json');
+
+    const data = fs.readFileSync(filePath, 'utf8');
+
+    const json = JSON.parse(data);
 
 
-    for (let i = 0; i < clientes.length; i++) {
 
-       //const sleepData = clientes[i]["oi_sleeping.uuid"];
-       const sleepData = clientes[i];
+    for (let i = mass.count; i < clientes.length; i++) {
+
+        json.count = json.count + 1;
+
+        fs.writeFileSync(filePath, JSON.stringify(json, null, 2), 'utf8');
+
+        console.log('Arquivo JSON atualizado com sucesso!');
+
+        //const sleepData = clientes[i]["oi_sleeping.uuid"];
+        const sleepData = clientes[i];
         console.log("very", sleepData, clientes[0])
 
         if (!sleepData) {
@@ -158,7 +175,7 @@ async function massInactivation() {
         console.log(`Inativando ${i + 1} de ${clientes.length} — CPF: ${cpf}`, uuid);
 
         await fallAsleep(cpf, uuid);
-        await delay(2000);
+        await delay(5000);
     }
 
 
@@ -316,7 +333,7 @@ async function teste() {
 
             await Clientes.update({
                 uuid: uuid
-            },{
+            }, {
                 where: {
                     nu_documento: cliente.nu_documento
                 }
