@@ -273,7 +273,7 @@ async function massInactivation() {
 
 }
 
-massInactivation()
+//massInactivation()
 
 //teste()
 
