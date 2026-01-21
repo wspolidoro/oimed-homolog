@@ -1814,7 +1814,7 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
     if (response.data.success == true) {
 
 
-      const cliente = await Clientes.update({
+      const clienteUpdate = await Clientes.update({
         dtAtivacao: new Date()
       }, {
         where: { nu_documento: cpf }
@@ -1824,6 +1824,15 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
       res.send(response.data);
       console.log(response.data)
       console.log("criado: ", response.data);
+      const dataFranqueado = await Franqueado.findAll({
+        where: {
+          id: cliente[0].dataValues.id_franqueado
+        }
+      });
+
+
+      await mailerNewCadastro(dataFranqueado[0].dataValues, cliente[0].dataValues.email);
+
       let sending = await sendMailError(arrBD, "Vida cadastrada na Central principal", response.data, cliente[0].id_franqueado, "CONCLUIDO"); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
       return true;
     } else {

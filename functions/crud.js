@@ -75,23 +75,25 @@ module.exports = {
    */
 
             try {
- /*                const uuid = await axios.get(`${process.env.API_URL}/beneficiaries/${id}`, {
+               const uuid = await axios.get(`${process.env.API_URL}/beneficiaries/${id}`, {
                     headers: {
                         'clientId': process.env.CLIENT_ID,
                         'Authorization': process.env.AUTHORIZATION,
                         'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
                     }
-                }); */
+                }); 
 
 //uuid.data.beneficiary.uuid
                 //const uuid = response.data.beneficiary.uuid;
-                const retorno = await axios.delete(`${process.env.API_URL}/beneficiaries/${id}`, {
+                const retorno = await axios.delete(`${process.env.API_URL}/beneficiaries/${uuid.data.beneficiary.uuid}`, {
                     headers: {
                         'clientId': process.env.CLIENT_ID,
                         'Authorization': process.env.AUTHORIZATION,
                         'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
                     }
                 });
+
+                console.log("retorno do delete", retorno.data)
                 return retorno.data;
                 if (retorno.data.success === true) {
                     //res.json(retorno.data)

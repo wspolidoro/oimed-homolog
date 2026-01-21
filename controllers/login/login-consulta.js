@@ -40,13 +40,13 @@ module.exports = {
                     const isWakeUp = await wakeUp(isSleeping.uuid);
 
                     if (isWakeUp) {
-                        res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://oimed.rapidoc.tech/${process.env.CLIENT_ID}/beneficiary/${isSleeping.uuid}` });
+                        res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${isSleeping.uuid}` });
                     }
 
                 } else {//00057163731
                     console.log("Cliente não está dormindo:", cpf);
                     if (cliente.uuid) {
-                        res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://oimed.rapidoc.tech/${process.env.CLIENT_ID}/beneficiary/${cliente.uuid}` });
+                        res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${cliente.uuid}` });
 
                     } else {
                         const getCliente = await buscarClienteService(cpf);
@@ -56,7 +56,7 @@ module.exports = {
                             { where: { nu_documento: cpf } }
                         );
 
-                        res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://oimed.rapidoc.tech/${process.env.CLIENT_ID}/beneficiary/${getCliente.beneficiary.uuid}` });
+                        res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${getCliente.beneficiary.uuid}` });
 
                     }
 

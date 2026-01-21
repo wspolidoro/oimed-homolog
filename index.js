@@ -75,7 +75,8 @@ testConnection(); */
 
 
 async function fallAsleep(cpf, uuid) {
-    const resultado = await dormir.delete(uuid);
+    //const resultado = await dormir.delete(uuid);
+    const resultado = await dormir.delete(cpf);
 
     console.log("dasadaadasdasdasd", resultado)
 
@@ -93,6 +94,14 @@ async function fallAsleep(cpf, uuid) {
         }).catch((error) => {
             console.error(error.original.sqlMessage)
         });
+
+         await Clientes.update({
+                uuid: resultado.beneficiary.uuid
+            }, {
+                where: {
+                    nu_documento: cpf
+                }
+            })
     } catch (err) {
         console.log("erro ao inativar: ", err.message)
     }
@@ -122,8 +131,8 @@ async function massInactivation() {
         where: {
             [Op.and]: [
                 { situacao: 'ativo' },
-                { id_franqueado: 76 }
-                //{ uuid: "" }
+                { id_franqueado: 76 },
+                { uuid: "esse" }
             ]
             //situacao: 'ativo'
         },
@@ -209,82 +218,6 @@ async function massInactivation() {
     //console.log(listaVidasAtivas.length, clientes.length)
 
 
-
-
-
-    async function ativar(uuid) {
-        try {
-            const retorno = await axios.put(
-                `${process.env.API_URL}/beneficiaries/${uuid}/reactivate`,
-                "data",
-                {
-                    headers: {
-                        'clientId': process.env.CLIENT_ID,
-                        'Authorization': process.env.AUTHORIZATION,
-                        'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
-                    }
-                }
-            );
-
-            console.log("Ativado:", retorno.data.success);
-            return retorno.data;
-
-        } catch (err) {
-            console.log("Erro ao reativar:", err.message);
-        }
-    }
-
-    async function iniciar(clientes) {
-
-        for (let i = 0; i < clientes.length; i++) {
-
-
-
-            try {
-                const cpf = clientes[i].nu_documento;
-                console.log(`🔄 Ativando ${i + 1}/${clientes.length} — CPF: ${cpf}`);
-                const response = await axios.get(
-                    `${process.env.API_URL}/beneficiaries/${cpf}`,
-                    {
-                        headers: {
-                            'clientId': process.env.CLIENT_ID,
-                            'Authorization': process.env.AUTHORIZATION,
-                            'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
-                        }
-                    }
-                );
-                console.log("UUID:", response.data);
-                if (response.data.success) {
-                    console.log("UUID:", response.data.beneficiary.uuid);
-
-                    await Clientes.update({ uuid: response.data.beneficiary.uuid }, {
-                        where: {
-
-                            nu_documento: cpf,
-
-                        }
-                    }).then(res => {
-                        console.log(res)
-                    }).catch(err => {
-                        console.error(err)
-                    })
-
-                    //await ativar(response.data.beneficiary.uuid);
-
-                    // 🔥 Só depois que GET+PUT finalizam → Aguarda 2s
-
-                }
-
-            } catch (err) {
-                console.log("Erro ao consultar CPF:", err.message);
-            }
-            await delay(5000);
-        }
-
-        console.log("\n🏁 FINALIZADO");
-    }
-
-    //iniciar(clientes);
 
 
 
