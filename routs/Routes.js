@@ -495,6 +495,17 @@ router.post('/franqueado/clientes', async (req, res) => {
     var cpfNumber = req.body.nu_documento;
     var numericCpfNumber = cpfNumber.replace(/\D/g, "");
 
+
+    const existingCliente = await Clientes.findOne({
+      where: {
+        nu_documento: numericCpfNumber
+      }
+    });
+
+    if (existingCliente) {
+      return res.status(400).json({ success: false, message: "Cliente já cadastrado" });
+    }
+
     //formatar telefone
     let telefoneInformado = (numero) => {
       return numero
@@ -694,6 +705,21 @@ router.put('/franqueado/clientes/update', async (req, res) => {
 
       req.body.beneficiarios.map(async (beneficiario, i) => {
         var contador = i + 1;
+
+        var cpfNumber = beneficiario["nu_documento" + contador];
+        var numericCpfNumber = cpfNumber.replace(/\D/g, "");
+
+        const existingCliente = await Clientes.findOne({
+          where: {
+            nu_documento: numericCpfNumber
+          }
+        });
+
+        if (existingCliente) {
+          return res.status(400).json({ success: false, message: "Cliente já cadastrado" });
+        }
+
+
         if (beneficiario["nm_cliente" + contador] != null) {
           try {
             const newBeneficiario = await Clientes.create({
