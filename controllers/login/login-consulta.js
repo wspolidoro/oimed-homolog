@@ -14,7 +14,7 @@ const { buscarClienteService } = require('../services/index.js');
 module.exports = {
     loginConsulta: async (req, res) => {
 
-        console.log("chamar control");
+        console.log("chamar control", req.body);
         console.log("verificando....:", req.body == 1);
 
         const cliente = await Clientes.findOne({

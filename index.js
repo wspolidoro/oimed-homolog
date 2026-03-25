@@ -7,8 +7,6 @@ const port = process.env.PORT || 3035;
 const rout = require('./routs/Routes');
 const routerApi = require('./api/api');
 const routerSandbox = require('./api/sandbox');
-const fs = require('fs');
-
 //debbug
 const sendMailError = require('./routs/sendMailer.js');
 
@@ -26,6 +24,14 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 // Express modules / packages 
 
+// expose static assets so the login consulta page can load its JS/CSS
+const assetsDir = path.join(__dirname, 'parceiro.painelw.com.br/assets');
+app.use('/assets', express.static(assetsDir));
+const jsDir = path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir');
+app.use('/js', express.static(jsDir));
+
+
+
 app.use('/api/', rout);
 
 app.get('/mailerr', async (req, res) => {
@@ -38,8 +44,24 @@ app.get('/mailerr', async (req, res) => {
 
 });
 
-app.use('/api', routerApi);
-app.use('/sandbox', routerSandbox);
+/* app.use('/api', routerApi);
+app.use('/sandbox', routerSandbox); */
+
+app.use('/api/production', routerApi);
+app.use('/api/sandbox', routerSandbox);
+
+
+app.get('/login-consulta', (req, res) => {
+    res.sendFile(path.join(__dirname, 'parceiro.painelw.com.br/views/login-consulta/index.html'));
+});
+
+app.get('/cadastro/oimed', (req, res) => {
+    res.sendFile(path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir/index.html'));
+});
+
+// serve the novo-samir form folder so its JS/CSS are delivered with the right MIME types
+const novoSamirDir = path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir');
+app.use('/cadastro/oimed', express.static(novoSamirDir));
 
 const dormir = require('./functions/crud');
 const Sleeping = require('./schema/tb_sleeping');
@@ -95,13 +117,13 @@ async function fallAsleep(cpf, uuid) {
             console.error(error.original.sqlMessage)
         });
 
-         await Clientes.update({
-                uuid: resultado.beneficiary.uuid
-            }, {
-                where: {
-                    nu_documento: cpf
-                }
-            })
+        await Clientes.update({
+            uuid: resultado.beneficiary.uuid
+        }, {
+            where: {
+                nu_documento: cpf
+            }
+        })
     } catch (err) {
         console.log("erro ao inativar: ", err.message)
     }
@@ -127,100 +149,65 @@ app.put('/api/cliente/toggleSleeping/:uuid', async (req, res) => {
 });
 
 async function massInactivation() {
+    const exclusions = [
+        "14494677760",
+        "07428605660",
+        "10151145717",
+        "03689721199",
+        "32978080809",
+        "12335682482",
+        "12740989474",
+        "02487575123",
+        "04595528132",
+        "05333611335",
+        "74736990163"
+    ];
+
+    const normalizedExclusions = new Set(exclusions.map(cpf => cpf.replace(/\D/g, '')));
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
     const clientes = await Clientes.findAll({
         where: {
-            [Op.and]: [
-                { situacao: 'ativo' },
-                { id_franqueado: 76 },
-                { uuid: "esse" }
-            ]
-            //situacao: 'ativo'
+            situacao: 'ativo',
+            nu_documento: { [Op.notIn]: exclusions }
         },
         raw: true,
-        attributes: ['nu_documento', 'situacao', 'uuid'],
-        include: [{
-            model: Sleeping,
-            required: false // true = INNER JOIN / false = LEFT JOIN
-        }]
+        attributes: ['nu_documento', 'uuid']
     });
 
+    for (const cliente of clientes) {
+        const cpfDigits = cliente.nu_documento ? cliente.nu_documento.replace(/\D/g, '') : '';
 
-
-    function delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-    const mass = require('./mass.json');
-
-    const filePath = path.join(__dirname, 'mass.json');
-
-    const data = fs.readFileSync(filePath, 'utf8');
-
-    const json = JSON.parse(data);
-
-
-
-    for (let i = mass.count; i < clientes.length; i++) {
-
-        json.count = json.count + 1;
-
-        fs.writeFileSync(filePath, JSON.stringify(json, null, 2), 'utf8');
-
-        console.log('Arquivo JSON atualizado com sucesso!');
-
-        //const sleepData = clientes[i]["oi_sleeping.uuid"];
-        const sleepData = clientes[i];
-        console.log("very", sleepData, clientes[0])
-
-        if (!sleepData) {
-            console.log(`Ignorando ${i + 1} — sem uuid`);
-            continue; // Pula para o próximo
+        if (!cpfDigits || normalizedExclusions.has(cpfDigits)) {
+            console.log(`Ignorando ${cliente.nu_documento || 'registro sem CPF'} (exclusão ou CPF inválido)`);
+            await delay(5000);
+            continue;
         }
 
-        console.log(clientes[i].situacao)
+        const alreadySleeping = await Sleeping.findOne({
+            where: {
+                [Op.or]: [
+                    { idVida: cliente.nu_documento },
+                    { idVida: cpfDigits }
+                ]
+            }
+        });
 
-        const cpf = clientes[i].nu_documento;
-        const uuid = sleepData.uuid;
+        if (alreadySleeping) {
+            console.log(`Ignorando ${cliente.nu_documento} (já está na tabela sleeping)`);
+            await delay(5000);
+            continue;
+        }
 
-        console.log(`Inativando ${i + 1} de ${clientes.length} — CPF: ${cpf}`, uuid);
+        try {
+            console.log(`Inativando ${cliente.nu_documento}`);
+            await fallAsleep(cliente.nu_documento, cliente.uuid);
+        } catch (error) {
+            console.error(`Erro ao inativar ${cliente.nu_documento}:`, error.message || error);
+        }
 
-        await fallAsleep(cpf, uuid);
         await delay(5000);
     }
-
-
-    return;
-
-
-    //console.log("Total de clientes: ", clientes.length);
-
-    const cpfsSleeping = await Sleeping.findAll({
-        attributes: ["idVida"],
-        raw: true
-    });
-
-    const listaSleeping = new Set(cpfsSleeping.map(x => x.idVida));
-
-
-
-
-    const response = await axios.get(`${process.env.API_URL}/beneficiaries`, {
-        headers: {
-            'clientId': process.env.CLIENT_ID,
-            'Authorization': process.env.AUTHORIZATION,
-            'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
-        }
-    });
-
-    let listaVidasAtivas = response.data.beneficiaries;
-
-    //iniciar(clientes, listaSleeping, listaVidasAtivas);
-
-    //console.log(listaVidasAtivas.length, clientes.length)
-
-
-
-
-
 }
 
 //massInactivation()

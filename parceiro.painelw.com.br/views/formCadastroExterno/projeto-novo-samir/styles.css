@@ -1,0 +1,224 @@
+:root {
+  --bg-color: #02050c;
+  --card-color: rgba(8, 10, 23, 0.92);
+  --panel-gradient: linear-gradient(180deg, rgba(12, 16, 42, 0.95), rgba(3, 46, 61, 0.95));
+  --panel-dark: rgba(4, 9, 21, 0.95);
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --accent: #00e4ff;
+  --accent-strong: #4d4fff;
+  --text-muted: rgba(255, 255, 255, 0.65);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  background: radial-gradient(circle at 20% 20%, rgba(0, 228, 255, 0.25), transparent 30%),
+    radial-gradient(circle at 80% 0%, rgba(84, 60, 255, 0.4), transparent 35%),
+    var(--bg-color);
+  color: #fff;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 3rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.telemed-card {
+  width: min(1200px, 100%);
+  border-radius: 1.8rem;
+  overflow: hidden;
+  background: var(--card-color);
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.45);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.hero-panel {
+  padding: 3rem 2.5rem;
+  background: var(--panel-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-content {
+  max-width: 420px;
+}
+
+.hero-content h1 {
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  margin-bottom: 1rem;
+}
+
+.hero-content p {
+  line-height: 1.7;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.hero-note {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin-top: 1.5rem;
+}
+
+.hero-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.hero-content li {
+  position: relative;
+  padding-left: 1.5rem;
+  line-height: 1.7;
+}
+
+.hero-content li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-size: 1.2rem;
+  line-height: 1.7;
+}
+
+.form-panel {
+  padding: 2.75rem;
+  background: var(--panel-dark);
+}
+
+.form-heading h2 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.form-heading .eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.form-heading .text-muted {
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.form-grid {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.input-group.full {
+  grid-column: 1 / -1;
+}
+
+.input-group label {
+  font-size: 0.95rem;
+  color: #e2e8f0;
+}
+
+.input-group input,
+.input-group select {
+  padding: 0.75rem 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--input-bg);
+  color: #fff;
+  font-size: 1rem;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 0.25rem rgba(0, 228, 255, 0.25);
+}
+
+.primary-btn {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  border: none;
+  background: linear-gradient(135deg, #00e4ff, #4d4fff);
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 25px rgba(0, 228, 255, 0.35);
+}
+
+.primary-btn:disabled {
+  cursor: wait;
+  opacity: 0.85;
+}
+
+.form-foot {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.invalid-feedback {
+  font-size: 0.82rem;
+  color: #ffbcbc;
+  display: none;
+}
+
+.was-validated input:invalid + .invalid-feedback,
+.was-validated select:invalid + .invalid-feedback {
+  display: block;
+}
+
+.hero-panel .badge {
+  border-radius: 999px;
+  padding: 0.35rem 1rem;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .telemed-card {
+    border-radius: 1.2rem;
+  }
+
+  .form-panel {
+    padding: 2rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero-panel {
+    padding: 2rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page {
+    padding: 2rem 1rem;
+  }
+}
