@@ -20,7 +20,7 @@ async function sendMailError(data, msg, msgErro, nu_painel, status) {
     //variaveis do corpo de envio do email com variação de idiomas para o novo aluno
 
 
-    const mailSentPT = await transporter.sendMail({
+   /*  const mailSentPT = await transporter.sendMail({
         from: '"kledisom" <devkledisom@gmail.com>',
         to: ['dev@ziiz.com.br', 'kledison2009@hotmail.com', 'wspolidoro@gmail.com', 'gerencia@oimed.com.br', 'bell@ziiz.com.br'],
         subject: `OIMED INFORMA! ${status}`,
@@ -33,13 +33,8 @@ async function sendMailError(data, msg, msgErro, nu_painel, status) {
         <h2>Erros</h2>
         <p>${JSON.stringify(msgErro)}</p>
         `
-        /*       attachments: [
-                  {
-                      path: path
-                  }
-              ] */
     });
-    return mailSentPT
+    return mailSentPT */
     //---------------------------------------------------------------------------------->
 
 };

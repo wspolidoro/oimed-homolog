@@ -149,30 +149,54 @@ app.put('/api/cliente/toggleSleeping/:uuid', async (req, res) => {
 });
 
 async function massInactivation() {
-    const exclusions = [
-        "14494677760",
+      const exclusions = [
+        "91459044568",
+        "07170818345",
+        "39439450819",
         "07428605660",
+        "08705510511",
+        "39439450819",
+        "07428605660",
+        "22149723743",
+        "31057270865",
         "10151145717",
-        "03689721199",
-        "32978080809",
-        "12335682482",
-        "12740989474",
-        "02487575123",
-        "04595528132",
-        "05333611335",
-        "74736990163"
+        "46849922840"
     ];
+
 
     const normalizedExclusions = new Set(exclusions.map(cpf => cpf.replace(/\D/g, '')));
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-    const clientes = await Clientes.findAll({
+/*     const clientes = await Clientes.findAll({
         where: {
             situacao: 'ativo',
             nu_documento: { [Op.notIn]: exclusions }
         },
+        include: [{
+            model: Sleeping,
+            required: false
+        }],
         raw: true,
         attributes: ['nu_documento', 'uuid']
+    }); */
+
+
+    const clientes = await Clientes.findAll({
+        where: {
+            situacao: 'ativo',
+            nu_documento: { [Op.notIn]: exclusions },
+            // Use EXATAMENTE o nome que está no 'as' do include abaixo
+            '$oi_sleeping.idVida$': { [Op.is]: null }
+        },
+        include: [{
+            model: Sleeping,
+            as: 'oi_sleeping', // Definimos o apelido manualmente aqui
+            required: false,
+            attributes: []
+        }],
+        raw: true,
+        attributes: ['nu_documento', 'uuid'],
+        limit: 15
     });
 
     for (const cliente of clientes) {
@@ -275,6 +299,45 @@ async function teste() {
 app.listen(port, () => { // Listen on port 3000 
     console.log(`Listening! in port: ${port}`); // Log when listen success 
 });
+
+async function tes() {
+    const exclusions = [
+        "91459044568",
+        "07170818345",
+        "39439450819",
+        "07428605660",
+        "08705510511",
+        "39439450819",
+        "07428605660",
+        "22149723743",
+        "31057270865",
+        "10151145717",
+        "46849922840"
+    ];
+
+    const clientes = await Clientes.findAndCountAll({
+        where: {
+            situacao: 'ativo',
+            nu_documento: { [Op.notIn]: exclusions },
+            // Use EXATAMENTE o nome que está no 'as' do include abaixo
+            '$oi_sleeping.idVida$': { [Op.is]: null }
+        },
+        include: [{
+            model: Sleeping,
+            as: 'oi_sleeping', // Definimos o apelido manualmente aqui
+            required: false,
+            attributes: []
+        }],
+        raw: true,
+        attributes: ['nu_documento', 'uuid'],
+        limit: 67
+    });
+
+    console.log(clientes);
+}
+
+
+
 
 
 const arr2 = [

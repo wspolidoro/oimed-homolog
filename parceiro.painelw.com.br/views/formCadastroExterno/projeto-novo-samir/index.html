@@ -23,6 +23,7 @@
       --border: rgba(255, 47, 25, 0.4);
       --brand-white: #fff;
       --brand-red: #ff2f19;
+      --bg-blue: #132d46;
     }
 
     * {
@@ -68,9 +69,9 @@
 
     .tm-hero {
       padding: 3rem 2rem;
-      /* background: var(--brand-red); */
+      background: var(--bg-blue);
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
     }
 
@@ -117,13 +118,13 @@
       margin: 0 0 1rem;
       font-size: clamp(2rem, 3vw, 2.6rem);
       letter-spacing: -0.02em;
-      color: var(--brand-red);
+      color: var(--brand-white);
     }
 
     .tm-hero p {
       margin: 0 0 1.25rem;
       line-height: 1.7;
-      /*  color: var(--brand-white); */
+      color: var(--brand-white);
     }
 
     .tm-hero ul {
@@ -136,7 +137,7 @@
       position: relative;
       padding-left: 1.5rem;
       line-height: 1.85;
-      /* color: var(--brand-white); */
+      color: var(--brand-white);
     }
 
     .tm-hero li::before {
@@ -188,6 +189,41 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 1.2rem;
+    }
+
+    .tm-checkbox-field {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tm-dependent-wrapper {
+      grid-column: 1 / -1;
+      margin-top: 1.5rem;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .tm-dependent {
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 12px;
+      background: #ffffff;
+      padding: 1.25rem;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .tm-dependent h3 {
+      margin: 0;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #3a3a3a;
+    }
+
+    .hidden {
+      display: none !important;
     }
 
     .tm-field {
@@ -264,7 +300,8 @@
       padding: 0.98rem 1rem;
       border-radius: 1rem;
       border: none;
-      background: linear-gradient(135deg, #ff2f19, #ff4f2d);
+      /* background: linear-gradient(135deg, #ff2f19, #ff4f2d); */
+      background: linear-gradient(135deg, #132d46, #132D87);
       color: #fff;
       font-weight: 700;
       font-size: 1rem;
@@ -352,7 +389,7 @@
             <li>Fluxo visual leve para equipes externas</li>
           </ul>
           <p class="tm-hero-note">
-            A equipe Oimed cuida de você!
+            A nossa equipe cuida de você!
           </p>
         </div>
       </section>
@@ -445,6 +482,171 @@
               <option value="">Selecione primeiro o estado</option>
             </select>
             <div class="tm-feedback">Informe a cidade.</div>
+          </div>
+
+          <div class="tm-checkbox-field">
+            <label class="tm-label" for="includeDependents">
+              <input type="checkbox" id="includeDependents" name="includeDependents" />
+              Incluir dependentes (até 3)
+            </label>
+          </div>
+
+          <div id="dependentsCountWrapper" class="tm-field tm-full hidden">
+            <label for="dependentsCount" class="tm-label">Quantidade de dependentes</label>
+            <select id="dependentsCount" name="dependentsCount" class="tm-input" disabled>
+              <option value="">Selecione</option>
+              <option value="1">1 dependente</option>
+              <option value="2">2 dependentes</option>
+              <option value="3">3 dependentes</option>
+            </select>
+            <div class="tm-feedback">Escolha quantos dependentes deseja incluir.</div>
+          </div>
+
+          <div id="dependentsContainer" class="tm-dependent-wrapper hidden" aria-live="polite">
+            <div class="tm-dependent" data-dependent-index="1">
+              <h3>Dependente 1</h3>
+              <div class="tm-field">
+                <label for="dependent_1_name" class="tm-label">Nome completo</label>
+                <input type="text" class="tm-input" id="dependent_1_name" name="dependent_1_name" placeholder="Nome do dependente" />
+                <div class="tm-feedback">Informe o nome completo.</div>
+              </div>
+              <div class="tm-field">
+                <label for="dependent_1_document" class="tm-label">CPF</label>
+                <input
+                  type="text"
+                  class="tm-input dependent-cpf"
+                  id="dependent_1_document"
+                  name="dependent_1_document"
+                  placeholder="000.000.000-00"
+                  pattern="\d{3}\.\d{3}\.\d{3}-\d{2}"
+                  inputmode="numeric"
+                  minlength="11"
+                  maxlength="14"
+                />
+                <div class="tm-feedback">CPF válido é obrigatório.</div>
+              </div>
+              <div class="tm-field">
+                <label for="dependent_1_birthday" class="tm-label">Data de nascimento</label>
+                <input type="date" class="tm-input" id="dependent_1_birthday" name="dependent_1_birthday" />
+                <div class="tm-feedback">Escolha uma data.</div>
+              </div>
+              <div class="tm-field">
+                <label for="dependent_1_telefone" class="tm-label">Telefone (11 dígitos)</label>
+                <input
+                  type="tel"
+                  class="tm-input dependent-phone"
+                  id="dependent_1_telefone"
+                  name="dependent_1_telefone"
+                  placeholder="(11) 98765-4321"
+                  pattern="\(\d{2}\)\s\d{5}-\d{4}"
+                  inputmode="numeric"
+                  minlength="15"
+                  maxlength="15"
+                />
+                <div class="tm-feedback">Informe um telefone com DDD e 9 dígitos.</div>
+              </div>
+              <div class="tm-field">
+                <label for="dependent_1_email" class="tm-label">E-mail</label>
+                <input type="email" class="tm-input" id="dependent_1_email" name="dependent_1_email" placeholder="dependente@email.com" />
+                <div class="tm-feedback">Informe um e-mail válido.</div>
+              </div>
+            </div>
+            <div class="tm-dependent" data-dependent-index="2">
+              <h3>Dependente 2</h3>
+              <div class="tm-field">
+                <label for="dependent_2_name" class="tm-label">Nome completo</label>
+                <input type="text" class="tm-input" id="dependent_2_name" name="dependent_2_name" placeholder="Nome do dependente" />
+                <div class="tm-feedback">Informe o nome completo.</div>
+              </div>
+              <div class="tm-field">
+                <label for="dependent_2_document" class="tm-label">CPF</label>
+                <input
+                  type="text"
+                  class="tm-input dependent-cpf"
+                  id="dependent_2_document"
+                  name="dependent_2_document"
+                  placeholder="000.000.000-00"
+                  pattern="\d{3}\.\d{3}\.\d{3}-\d{2}"
+                  inputmode="numeric"
+                  minlength="11"
+                  maxlength="14"
+                />
+                <div class="tm-feedback">CPF válido é obrigatório.</div>
+              </div>
+              <div class="tm-field">
+                <label for="dependent_2_birthday" class="tm-label">Data de nascimento</label>
+                <input type="date" class="tm-input" id="dependent_2_birthday" name="dependent_2_birthday" />
+                <div class="tm-feedback">Escolha uma data.</div>
+              </div>
+              <div class="tm-field">
+                <label for="dependent_2_telefone" class="tm-label">Telefone (11 dígitos)</label>
+                <input
+                  type="tel"
+                  class="tm-input dependent-phone"
+                  id="dependent_2_telefone"
+                  name="dependent_2_telefone"
+                  placeholder="(11) 98765-4321"
+                  pattern="\(\d{2}\)\s\d{5}-\d{4}"
+                  inputmode="numeric"
+                  minlength="15"
+                  maxlength="15"
+                />
+                <div class="tm-feedback">Informe um telefone com DDD e 9 dígitos.</div>
+              </div>
+              <div class="tm-field">
+                <label for="dependent_2_email" class="tm-label">E-mail</label>
+                <input type="email" class="tm-input" id="dependent_2_email" name="dependent_2_email" placeholder="dependente@email.com" />
+                <div class="tm-feedback">Informe um e-mail válido.</div>
+              </div>
+            </div>
+            <div class="tm-dependent" data-dependent-index="3">
+              <h3>Dependente 3</h3>
+              <div class="tm-field">
+                <label for="dependent_3_name" class="tm-label">Nome completo</label>
+                <input type="text" class="tm-input" id="dependent_3_name" name="dependent_3_name" placeholder="Nome do dependente" />
+                <div class="tm-feedback">Informe o nome completo.</div>
+              </div>
+              <div class="tm-field">
+                <label for="dependent_3_document" class="tm-label">CPF</label>
+                <input
+                  type="text"
+                  class="tm-input dependent-cpf"
+                  id="dependent_3_document"
+                  name="dependent_3_document"
+                  placeholder="000.000.000-00"
+                  pattern="\d{3}\.\d{3}\.\d{3}-\d{2}"
+                  inputmode="numeric"
+                  minlength="11"
+                  maxlength="14"
+                />
+                <div class="tm-feedback">CPF válido é obrigatório.</div>
+              </div>
+              <div class="tm-field">
+                <label for="dependent_3_birthday" class="tm-label">Data de nascimento</label>
+                <input type="date" class="tm-input" id="dependent_3_birthday" name="dependent_3_birthday" />
+                <div class="tm-feedback">Escolha uma data.</div>
+              </div>
+              <div class="tm-field">
+                <label for="dependent_3_telefone" class="tm-label">Telefone (11 dígitos)</label>
+                <input
+                  type="tel"
+                  class="tm-input dependent-phone"
+                  id="dependent_3_telefone"
+                  name="dependent_3_telefone"
+                  placeholder="(11) 98765-4321"
+                  pattern="\(\d{2}\)\s\d{5}-\d{4}"
+                  inputmode="numeric"
+                  minlength="15"
+                  maxlength="15"
+                />
+                <div class="tm-feedback">Informe um telefone com DDD e 9 dígitos.</div>
+              </div>
+              <div class="tm-field">
+                <label for="dependent_3_email" class="tm-label">E-mail</label>
+                <input type="email" class="tm-input" id="dependent_3_email" name="dependent_3_email" placeholder="dependente@email.com" />
+                <div class="tm-feedback">Informe um e-mail válido.</div>
+              </div>
+            </div>
           </div>
 
           <div class="tm-foot">
