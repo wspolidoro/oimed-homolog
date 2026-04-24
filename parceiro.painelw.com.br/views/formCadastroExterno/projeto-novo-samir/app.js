@@ -9,7 +9,7 @@ const staticPayload = {
   paymentType: "S",
   serviceType: 'G',
   cpfTitular: 'titular',
-  id_franqueado: '129',
+  id_franqueado: '133',
   link: window.location.href
 };
 
