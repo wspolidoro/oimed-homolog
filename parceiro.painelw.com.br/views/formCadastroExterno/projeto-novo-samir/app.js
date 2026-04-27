@@ -302,7 +302,7 @@ formElement.addEventListener('submit', async (event) => {
     }
 
     formElement.reset();
-    window.location.href = '/thank-you.html';
+    window.location.href = '/api/thankyou';
   } catch (error) {
     console.error(error);
     showAlert('error', 'Erro no envio', error.message || 'Tente novamente mais tarde.');
