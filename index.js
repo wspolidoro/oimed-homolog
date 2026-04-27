@@ -59,6 +59,10 @@ app.get('/api/cadastro/oimed', (req, res) => {
     res.sendFile(path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir/index.html'));
 });
 
+app.get('/api/thankyou', (req, res) => {
+    res.sendFile(path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir/thank-you.html'));
+});
+
 // serve the novo-samir form folder so its JS/CSS are delivered with the right MIME types
 const novoSamirDir = path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir');
 app.use('/api/cadastro/oimed', express.static(novoSamirDir));

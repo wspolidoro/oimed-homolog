@@ -1,0 +1,97 @@
+:root {
+  --blue: #132d46;
+  --red: #e01d01;
+  --white: #e5e5e5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', 'Space Grotesk', system-ui, sans-serif;
+  background: var(--blue);
+  color: var(--white);
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.2), transparent 40%),
+    radial-gradient(circle at 80% 0%, rgba(224, 29, 1, 0.25), transparent 50%);
+  opacity: 0.4;
+  z-index: -1;
+}
+
+.thank-you-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.thank-you-card {
+  width: min(520px, 100%);
+  background: rgba(19, 45, 70, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.8rem;
+  padding: 3rem;
+  text-align: center;
+  box-shadow: 0 25px 55px rgba(0, 0, 0, 0.55);
+}
+
+.eyebrow {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.55em;
+  margin: 0 0 1rem;
+  color: rgba(255, 229, 229, 0.7);
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 2.8rem);
+  letter-spacing: -0.02em;
+}
+
+.message {
+  margin: 1.5rem 0;
+  line-height: 1.7;
+  color: rgba(255, 229, 229, 0.9);
+}
+
+.note {
+  color: rgba(229, 229, 229, 0.7);
+  margin-bottom: 1.5rem;
+}
+
+.cta {
+  background: var(--red);
+  color: var(--white);
+  border: none;
+  border-radius: 999px;
+  padding: 0.9rem 2.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 15px 30px rgba(224, 29, 1, 0.45);
+}
+
+@media (max-width: 480px) {
+  .thank-you-card {
+    padding: 2.2rem;
+  }
+
+  .cta {
+    width: 100%;
+  }
+}

@@ -1,6 +1,6 @@
 //const API_ENDPOINT = 'https://blue.api.painelw.com.br/api/sandbox/franqueado/clientes';  
-const API_ENDPOINT = 'https://parceiro.painelw.com.br/api/cadastrar/clientes/newform?familiar=false'
-//const API_ENDPOINT = 'http://localhost:3035/api/cadastrar/clientes/newform?familiar=false';
+//const API_ENDPOINT = 'https://parceiro.painelw.com.br/api/cadastrar/clientes/newform?familiar=false'
+const API_ENDPOINT = 'http://localhost:3035/api/cadastrar/clientes/newform?familiar=false';
 const formElement = document.getElementById('cadastroForm');
 const submitBtn = document.getElementById('submitBtn');
 const defaultButtonContent = submitBtn.innerHTML;
@@ -56,7 +56,7 @@ const addMaskListeners = (selector, formatter) => {
 };
 
 const showAlert = (icon, title, text) => {
-  Swal.fire({
+  return Swal.fire({
     icon,
     title,
     text,
@@ -301,13 +301,8 @@ formElement.addEventListener('submit', async (event) => {
       throw new Error(errorMessage);
     }
 
-    showAlert('success', 'Cadastro enviado', 'Recebemos os dados e vamos confirmar o cadastro em instantes.')
-    .then(result => {
-      if (result.isConfirmed) {
-        window.location.href = 'https://medycco.com.br';
-      }
-    });
     formElement.reset();
+    window.location.href = 'thank-you.html';
   } catch (error) {
     console.error(error);
     showAlert('error', 'Erro no envio', error.message || 'Tente novamente mais tarde.');
