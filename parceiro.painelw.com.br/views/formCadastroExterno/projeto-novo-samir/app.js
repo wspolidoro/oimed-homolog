@@ -167,7 +167,9 @@ const populateCityOptions = (cities = [], placeholder = 'Selecione uma cidade') 
 };
 
 const loadStates = async () => {
+   console.log("very:", stateSelect)
   if (!stateSelect) return;
+
   stateSelect.innerHTML = '<option value="">Carregando estados...</option>';
   stateSelect.disabled = true;
   try {
