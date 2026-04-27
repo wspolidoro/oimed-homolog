@@ -28,7 +28,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const assetsDir = path.join(__dirname, 'parceiro.painelw.com.br/assets');
 app.use('/assets', express.static(assetsDir));
 const jsDir = path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir');
-app.use('/api/js', express.static(jsDir));
+app.use('/js', express.static(jsDir));
 
 
 
