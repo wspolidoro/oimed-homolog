@@ -176,7 +176,9 @@ const loadStates = async () => {
     if (Array.isArray(data)) {
       populateStateOptions(data);
     }
+    console.log("very:", data)
   } catch (error) {
+    console.log("very:", data)
     console.error('Erro ao carregar estados do Brasil:', error);
     if (stateSelect) {
       stateSelect.innerHTML = '<option value="">Erro ao carregar estados</option>';
