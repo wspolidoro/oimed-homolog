@@ -28,6 +28,7 @@ const Sleeping = require('../schema/tb_sleeping');
 
 //controllers
 const cadastroNewForm = require('../controllers/cadastroClientes/cadastroNewForm');
+const cadastroNewFormFromWoo = require('../controllers/cadastroClientes/cadastroNewFormFromWoo.js');
 const paymentReminder = require('../controllers/telemedicinaActions/notifications.js');
 const loginWordpress = require('../controllers/login/loginForWp.js');
 const sub_franqueados = require('../controllers/sub_franqueados/crud.js');
@@ -83,7 +84,8 @@ function privateAuth(req, res, next) {
   }
 };
 
-
+//teste
+router.post('/wp/clientes/newform', cadastroNewFormFromWoo.cadastrarVida);
 
 //--------------------authetication--------------------------->
 function auth(req, res, next) {
