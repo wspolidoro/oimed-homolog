@@ -104,7 +104,7 @@ module.exports = {
       const clientePayload = {
         nm_cliente: `${billing.first_name || ''} ${billing.last_name || ''}`.trim() || 'Cliente WooCommerce',
         nu_documento: numericCpfNumber,
-        birthday: billing.birthdate || '0000-00-00',
+        birthday: getMetaValue('_billing_dt_nascimento_titular') || '0000-00-00',
         telefone: telefoneInformado(billingPhone) || '000000000',
         email: billing.email || 'cliente@sememail.com',
         zip_code: billing.postcode || '00000000',
