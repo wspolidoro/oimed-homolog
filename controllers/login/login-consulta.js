@@ -17,8 +17,6 @@ try{
  console.log("chamar control", req.body);
         console.log("verificando....:", req.body == 1);
 
-        res.status(200).json({ success: true, message: "Operação realizada com sucesso!", cliente: req.body });
-
         const cliente = await Clientes.findOne({
             where: { nu_documento: req.body.nuCpf },
             raw: true
