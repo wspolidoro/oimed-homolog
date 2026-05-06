@@ -13,8 +13,8 @@ const { buscarClienteService } = require('../services/index.js');
 
 module.exports = {
     loginConsulta: async (req, res) => {
-
-        console.log("chamar control", req.body);
+try{
+ console.log("chamar control", req.body);
         console.log("verificando....:", req.body == 1);
 
         const cliente = await Clientes.findOne({
@@ -70,6 +70,11 @@ module.exports = {
             res.status(200).json({ success: false, message: "cliente não encontrado" })
         }
 
+} catch(error) {
+    console.log("erro: ", error);
+    res.status(500).json({ success: false, message: "Ocorreu um erro ao processar a solicitação.", error: error.message });
+}
+       
         //buscar dados pelo cpf na tabela de clientes
         /*      const cliente = await Clientes.findAll({
                  where: { nu_documento: req.body.login }
