@@ -22,6 +22,7 @@ try{
             raw: true
         });
 
+        res.status(200).json({ success: true, message: "Operação realizada com sucesso!", cliente: cliente });
 
         if (cliente) {
             const cpf = cliente.nu_documento;
