@@ -13,69 +13,69 @@ const { buscarClienteService } = require('../services/index.js');
 
 module.exports = {
     loginConsulta: async (req, res) => {
-try{
- console.log("chamar control", req.body);
-        console.log("verificando....:", req.body == 1);
+        try {
+            console.log("chamar control", req.body);
+            console.log("verificando....:", req.body == 1);
 
-        const cliente = await Clientes.findOne({
-            where: { nu_documento: req.body.nuCpf },
-            raw: true
-        });
+            const cliente = await Clientes.findOne({
+                where: { nu_documento: req.body.nuCpf },
+                raw: true
+            });
 
-        
 
-        if (cliente) {
-            const cpf = cliente.nu_documento;
-            const senha = cliente.nu_documento.slice(0, 4);
-            console.log("cliente encontrado: ", cpf, senha, req.body.nuCpf, req.body.password);
 
-            if (req.body.nuCpf == cpf && req.body.password == senha) {
-                const isSleeping = await Sleeping.findOne({
-                    where: { idVida: cpf },
-                    raw: true
-                });
+            if (cliente) {
+                const cpf = cliente.nu_documento;
+                const senha = cliente.nu_documento.slice(0, 4);
+                console.log("cliente encontrado: ", cpf, senha, req.body.nuCpf, req.body.password);
 
-                if (isSleeping) {
-                    console.log("Cliente está dormindo:2", cpf);
+                if (req.body.nuCpf == cpf && req.body.password == senha) {
+                    const isSleeping = await Sleeping.findOne({
+                        where: { idVida: cpf },
+                        raw: true
+                    });
 
-                    const isWakeUp = await wakeUp(isSleeping.uuid);
+                    if (isSleeping) {
+                        console.log("Cliente está dormindo:2", cpf);
 
-                    if (isWakeUp) {
-                        res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${isSleeping.uuid}` });
+                        const isWakeUp = await wakeUp(isSleeping.uuid);
+
+                        if (isWakeUp) {
+                            res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${isSleeping.uuid}` });
+                        }
+
+                    } else {//00057163731
+                        console.log("Cliente não está dormindo:", cpf);
+                        if (cliente.uuid) {
+                            res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${cliente.uuid}` });
+
+                        } else {
+                            const getCliente = await buscarClienteService(cpf);
+
+                            await Clientes.update(
+                                { uuid: getCliente.beneficiary.uuid },
+                                { where: { nu_documento: cpf } }
+                            );
+
+                            res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${getCliente.beneficiary.uuid}` });
+
+                        }
+
                     }
-
-                } else {//00057163731
-                    console.log("Cliente não está dormindo:", cpf);
-                    if (cliente.uuid) {
-                        res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${cliente.uuid}` });
-
-                    } else {
-                        const getCliente = await buscarClienteService(cpf);
-
-                        await Clientes.update(
-                            { uuid: getCliente.beneficiary.uuid },
-                            { where: { nu_documento: cpf } }
-                        );
-
-                        res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${getCliente.beneficiary.uuid}` });
-
-                    }
-
+                } else {
+                    res.status(200).json({ success: false, message: "CPF ou Senha incorreto" })
                 }
+
+
             } else {
-                res.status(200).json({ success: false, message: "CPF ou Senha incorreto" })
+                res.status(200).json({ success: false, message: "cliente não encontrado" })
             }
 
-
-        } else {
-            res.status(200).json({ success: false, message: "cliente não encontrado" })
+        } catch (error) {
+            console.log("erro: ", error);
+            res.status(500).json({ success: false, message: "Ocorreu um erro ao processar a solicitação.", error: error.message });
         }
 
-} catch(error) {
-    console.log("erro: ", error);
-    res.status(500).json({ success: false, message: "Ocorreu um erro ao processar a solicitação.", error: error.message });
-}
-       
         //buscar dados pelo cpf na tabela de clientes
         /*      const cliente = await Clientes.findAll({
                  where: { nu_documento: req.body.login }

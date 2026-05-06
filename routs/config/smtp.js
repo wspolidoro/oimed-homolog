@@ -3,7 +3,7 @@ module.exports = {
     port: 465,
     auth: {
         user: 'devkledisom@gmail.com',
-        pass: "wabn zlrw zbyw csvc"//"ynpp dyky wvyq jhxo",//'mhhipphoaubheehg' //senha de app
+        pass: "cbdq osve xpov vsio"//"ynpp dyky wvyq jhxo",//'mhhipphoaubheehg' //senha de app
     }
     /*     auth: {
             user: 'signatureprojectjp@gmail.com',
