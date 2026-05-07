@@ -23,7 +23,7 @@ const transporter = nodemailer.createTransport({
     secure: true, // true para porta 465
     auth: {
         user: "noreply@painelw.com.br",
-        pass: "H8GR3?ii=?opFd*="
+        pass: "Para@2023"
     },
     tls: {
         ciphers: 'SSLv3',
