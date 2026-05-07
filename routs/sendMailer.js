@@ -38,7 +38,7 @@ const transporter = nodemailer.createTransport({
     secure: true,
     auth: {
         user: "noreply@painelw.com.br",
-        pass: "Para@2023"
+        pass: "ParaSempre243"
     }
 });
 
