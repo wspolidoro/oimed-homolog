@@ -2,7 +2,7 @@ const nodemailer = require('nodemailer');
 
 const SMTP_CONFIG = require('./config/smtp');
 
-const transporter = nodemailer.createTransport({
+/* const transporter = nodemailer.createTransport({
     //service: 'gmail',
     host: SMTP_CONFIG.host,
     port: SMTP_CONFIG.port,
@@ -14,6 +14,20 @@ const transporter = nodemailer.createTransport({
     },
     tls: {
         rejectUnauthorized: false,
+    }
+}); */
+
+const transporter = nodemailer.createTransport({
+    host: "mail.painelw.com.br",
+    port: 465,
+    secure: true, // true para porta 465
+    auth: {
+        user: "noreply@painelw.com.br",
+        pass: "H8GR3?ii=?opFd*="
+    },
+    tls: {
+        ciphers: 'SSLv3',
+        rejectUnauthorized: false
     }
 });
 
