@@ -17,7 +17,7 @@ const SMTP_CONFIG = require('./config/smtp');
     }
 }); */
 
-const transporter = nodemailer.createTransport({
+/* const transporter = nodemailer.createTransport({
     host: "mail.painelw.com.br",
     port: 465,
     secure: true, // true para porta 465
@@ -29,6 +29,20 @@ const transporter = nodemailer.createTransport({
         ciphers: 'SSLv3',
         rejectUnauthorized: false
     }
+}); */
+
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+
+const transporter = nodemailer.createTransport({
+    host: "127.0.0.1",
+    port: 587,
+    secure: false,
+    requireTLS: true,
+    auth: {
+        user: "noreply@painelw.com.br",
+        pass: "Para@2023"
+    }
 });
 
 async function sendMailError(data, msg, msgErro, nu_painel, status) {
@@ -36,21 +50,21 @@ async function sendMailError(data, msg, msgErro, nu_painel, status) {
     //variaveis do corpo de envio do email com variação de idiomas para o novo aluno
 
 
-   /*  const mailSentPT = await transporter.sendMail({
-        from: '"kledisom" <devkledisom@gmail.com>',
-        to: ['dev@ziiz.com.br', 'kledison2009@hotmail.com', 'wspolidoro@gmail.com', 'gerencia@oimed.com.br', 'bell@ziiz.com.br'],
-        subject: `OIMED INFORMA! ${status}`,
-        text: `OIMED INFORMA! Segue em anexo sua ficha de inscrição`,
-        html: `
-        <h2>${msg}</h2>
-        <h5>Painel: ${nu_painel}</h5>
-        <p>${JSON.stringify(data)}</p>
-        <br />
-        <h2>Erros</h2>
-        <p>${JSON.stringify(msgErro)}</p>
-        `
-    });
-    return mailSentPT */
+    /*  const mailSentPT = await transporter.sendMail({
+         from: '"kledisom" <devkledisom@gmail.com>',
+         to: ['dev@ziiz.com.br', 'kledison2009@hotmail.com', 'wspolidoro@gmail.com', 'gerencia@oimed.com.br', 'bell@ziiz.com.br'],
+         subject: `OIMED INFORMA! ${status}`,
+         text: `OIMED INFORMA! Segue em anexo sua ficha de inscrição`,
+         html: `
+         <h2>${msg}</h2>
+         <h5>Painel: ${nu_painel}</h5>
+         <p>${JSON.stringify(data)}</p>
+         <br />
+         <h2>Erros</h2>
+         <p>${JSON.stringify(msgErro)}</p>
+         `
+     });
+     return mailSentPT */
     //---------------------------------------------------------------------------------->
 
 };
@@ -136,7 +150,7 @@ async function mailerNewCadastroModel2(data, emaildestino) {
         bcc: "naoresponda@painelw.com.br",
         subject: `${data.siteTitle} INFORMA!`,
         text: `${data.siteTitle} INFORMA!`,
-        html:  `
+        html: `
         <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -339,11 +353,11 @@ async function mailerPaymentReminder(ccEmails, from, to, subject, text) {
     //variaveis do corpo de envio do email com variação de idiomas para o novo aluno
 
     const mailSentPT = await transporter.sendMail({
-       from,
-       to,
-       cc: ccEmails.join(', '),  // Junta os emails para CC
-       subject,
-       html: text
+        from,
+        to,
+        cc: ccEmails.join(', '),  // Junta os emails para CC
+        subject,
+        html: text
     });
     return mailSentPT
     //---------------------------------------------------------------------------------->
