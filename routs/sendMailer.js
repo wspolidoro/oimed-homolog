@@ -34,9 +34,8 @@ const SMTP_CONFIG = require('./config/smtp');
 
 const transporter = nodemailer.createTransport({
     host: "mail.painelw.com.br",
-    port: 587,
-    secure: false,
-    requireTLS: true,
+    port: 465,
+    secure: true,
     auth: {
         user: "noreply@painelw.com.br",
         pass: "Para@2023"
