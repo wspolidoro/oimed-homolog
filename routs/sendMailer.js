@@ -32,7 +32,7 @@ const SMTP_CONFIG = require('./config/smtp');
 }); */
 
 
-const transporter = nodemailer.createTransport({
+/* const transporter = nodemailer.createTransport({
     host: "mail.painelw.com.br",
     port: 465,
     secure: true,
@@ -41,6 +41,33 @@ const transporter = nodemailer.createTransport({
         pass: "ParaSempre243"
     }
 });
+ */
+
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+
+
+const transporter = nodemailer.createTransport({
+    host: '127.0.0.1',
+    port: 587,
+    secure: false,
+    requireTLS: true,
+
+    auth: {
+        user: 'noreply@painelw.com.br',
+        pass: 'ParaSempre243'
+    },
+
+    authMethod: 'LOGIN',
+
+    tls: {
+        rejectUnauthorized: false
+    }
+});
+
+
+
+
 
 async function sendMailError(data, msg, msgErro, nu_painel, status) {
 
