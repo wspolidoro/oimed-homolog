@@ -48,7 +48,7 @@ dns.setDefaultResultOrder('ipv4first');
 
 
 const transporter = nodemailer.createTransport({
-    host: '127.0.0.1',
+    host: 'mail.painelw.com.br',
     port: 587,
     secure: false,
     requireTLS: true,

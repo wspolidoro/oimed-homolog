@@ -82,6 +82,7 @@ const { sleep, wakeUp } = require('./controllers/sleeping/index.js')
 const { Op, Sequelize, literal } = require('sequelize');
 
 const axios = require('axios');
+const Franqueado = require('./schema/tb_franqueado.js');
 
 /* async function testConnection() {
     const testeClient = await Clientes.findAll({
@@ -154,8 +155,38 @@ app.put('/api/cliente/toggleSleeping/:uuid', async (req, res) => {
     }
 });
 
-async function massInactivation() {
-      const exclusions = [
+app.put('/api/parceiro/inativar/:idFranqueado', async (req, res) => {
+    const idFranqueado = req.params.idFranqueado;
+
+    const inativar = await Franqueado.update({
+        status: 'inativo'
+    }, {
+        where: {
+            id: idFranqueado
+        }
+    });
+
+    massInactivationPorParceiro(idFranqueado);
+
+    res.status(200).json({ success: true, message: "Operação realizada com sucesso!" });
+});
+
+app.put('/api/parceiro/ativar/:idFranqueado', async (req, res) => {
+    const idFranqueado = req.params.idFranqueado;
+
+    const ativar = await Franqueado.update({
+        status: 'ativo'
+    }, {
+        where: {
+            id: idFranqueado
+        }
+    });
+
+    res.status(200).json({ success: true, message: "Operação realizada com sucesso!" });
+});
+
+async function massInactivationPorParceiro(idFranqueado) {
+    const exclusions = [
         "91459044568",
         "07170818345",
         "39439450819",
@@ -173,18 +204,91 @@ async function massInactivation() {
     const normalizedExclusions = new Set(exclusions.map(cpf => cpf.replace(/\D/g, '')));
     const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-/*     const clientes = await Clientes.findAll({
+
+    const clientes = await Clientes.findAll({
         where: {
             situacao: 'ativo',
-            nu_documento: { [Op.notIn]: exclusions }
+            nu_documento: { [Op.notIn]: exclusions },
+            id_franqueado: idFranqueado,
+            '$oi_sleeping.idVida$': { [Op.is]: null }
         },
         include: [{
             model: Sleeping,
-            required: false
+            as: 'oi_sleeping',
+            required: false,
+            attributes: []
         }],
         raw: true,
-        attributes: ['nu_documento', 'uuid']
-    }); */
+        attributes: ['nu_documento', 'uuid'],
+        limit: 15
+    });
+
+    for (const cliente of clientes) {
+        const cpfDigits = cliente.nu_documento ? cliente.nu_documento.replace(/\D/g, '') : '';
+
+        if (!cpfDigits || normalizedExclusions.has(cpfDigits)) {
+            console.log(`Ignorando ${cliente.nu_documento || 'registro sem CPF'} (exclusão ou CPF inválido)`);
+            await delay(5000);
+            continue;
+        }
+
+        const alreadySleeping = await Sleeping.findOne({
+            where: {
+                [Op.or]: [
+                    { idVida: cliente.nu_documento },
+                    { idVida: cpfDigits }
+                ]
+            }
+        });
+
+        if (alreadySleeping) {
+            console.log(`Ignorando ${cliente.nu_documento} (já está na tabela sleeping)`);
+            await delay(5000);
+            continue;
+        }
+
+        try {
+            console.log(`Inativando ${cliente.nu_documento}`);
+            await fallAsleep(cliente.nu_documento, cliente.uuid);
+        } catch (error) {
+            console.error(`Erro ao inativar ${cliente.nu_documento}:`, error.message || error);
+        }
+
+        await delay(5000);
+    }
+}
+
+async function massInactivation() {
+    const exclusions = [
+        "91459044568",
+        "07170818345",
+        "39439450819",
+        "07428605660",
+        "08705510511",
+        "39439450819",
+        "07428605660",
+        "22149723743",
+        "31057270865",
+        "10151145717",
+        "46849922840"
+    ];
+
+
+    const normalizedExclusions = new Set(exclusions.map(cpf => cpf.replace(/\D/g, '')));
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    /*     const clientes = await Clientes.findAll({
+            where: {
+                situacao: 'ativo',
+                nu_documento: { [Op.notIn]: exclusions }
+            },
+            include: [{
+                model: Sleeping,
+                required: false
+            }],
+            raw: true,
+            attributes: ['nu_documento', 'uuid']
+        }); */
 
 
     const clientes = await Clientes.findAll({
@@ -301,6 +405,8 @@ async function teste() {
     }
 
 }
+
+
 
 app.listen(port, () => { // Listen on port 3000 
     console.log(`Listening! in port: ${port}`); // Log when listen success 

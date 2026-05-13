@@ -141,9 +141,9 @@ router.post('/auth', async (req, res) => {
       //res.json(user);
 
       if (user != undefined) {
-        if (user.password == password) {
+        if (user.password == password && user.status == "ativo") {
 
-          jwt.sign({ id: user.id, email: user.email, role: user.subPaineis, autoridade: user.autoridade }, secretKey, { expiresIn: '2h' }, (err, token) => {
+          jwt.sign({ id: user.id, email: user.email, role: user.subPaineis, autoridade: user.autoridade }, secretKey, { expiresIn: '1h' }, (err, token) => {
             if (err) {
               res.status(400);
               res.json({ success: false, message: "Falha interna..." })
@@ -176,6 +176,20 @@ router.post('/auth', async (req, res) => {
   }
 
 
+});
+
+router.put('/change/password/:idFranqueado', async (req, res) => {
+  const idFranqueado = req.params.idFranqueado;
+
+    const alterarSenha = await Franqueado.update({
+        password: req.body.password
+    }, {
+        where: {
+            id: idFranqueado
+        }
+    });
+
+    res.status(200).json({ success: true, message: "Senha alterada com sucesso!" });
 });
 
 //rotas para wordpress
