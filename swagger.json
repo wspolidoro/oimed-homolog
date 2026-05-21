@@ -11,7 +11,7 @@
             "description": "Development Server"
         },
         {
-             "url": "https://parceiro.painelw.com.br/api/production",
+             "url": "http://localhost:3035/api/production",
             "description": "Production Server"
         }
     ],
