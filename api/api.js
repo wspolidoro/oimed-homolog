@@ -90,6 +90,12 @@ const credentials = [
         nome: "psamir53",
         api_key: "dfghr6btu567ShBf9ZbUWYXp",
         secret_key: "4a66442881c80232c0d179iyg3hy3g5y6d36746e124554cd9bfeea579492eac3ed-prod"
+    },
+      {
+        id: 20,
+        nome: "psamir54",
+        api_key: "dfghr6btu567ShBf9Zb5345",
+        secret_key: "4a66442881c80232c0d179iyg3hy3g5y6d36746e124554cd9bfeea3243456uhy34g5d-prod"
     }
     /*,
     {
