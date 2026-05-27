@@ -4,7 +4,11 @@ const crypto = require('crypto');
 
 exports.index = async (req, res) => {
   try {
-    const credentials = await CredentialsApi.findAll({ order: [['id', 'DESC']] });
+    const where = {};
+    if (req.query.id_franqueado) {
+      where.id_franqueado = req.query.id_franqueado;
+    }
+    const credentials = await CredentialsApi.findAll({ where, order: [['id', 'DESC']] });
     res.json(credentials);
   } catch (err) {
     res.status(500).json({ error: err.message });
