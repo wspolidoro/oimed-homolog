@@ -35,7 +35,7 @@ const sub_franqueados = require('../controllers/sub_franqueados/crud.js');
 const yampi = require('../controllers/yampi/index.js');
 const faturamento = require('../controllers/faturamento/index.js');
 const { webhookActivate, webhookInactivate } = require('../controllers/auto_ativacao/webhook.js');
-const webhook = require('../controllers/webhook/index.js');
+const credentialsApiController = require('../controllers/integracoes/apiKeys/credentialsApiController');
 const loginConsulta = require('../controllers/login/login-consulta.js');
 
 
@@ -2301,6 +2301,13 @@ router.get('/newFeat', (req, res) => {
 
 //SSO integrado
 router.post('/login/consulta', auth, loginConsulta.loginConsulta);
+
+//credentialsApi CRUD
+router.get('/credentialsApi', auth, credentialsApiController.index);
+router.get('/credentialsApi/:id', auth, credentialsApiController.show);
+router.post('/credentialsApi', auth, credentialsApiController.store);
+router.put('/credentialsApi/:id', auth, credentialsApiController.update);
+router.delete('/credentialsApi/:id', auth, credentialsApiController.destroy);
 
 module.exports = router;
 

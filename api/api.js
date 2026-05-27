@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 const Franqueado = require('../schema/tb_franqueado');
 const Clientes = require('../schema/tb_clientes');
 const Rapidoc = require('../schema/tb_rapidoc');
+const CredentialsApi = require('../schema/tb_credentialsApi');
 
 //LIBS
 const { Op, Sequelize } = require('sequelize');
@@ -48,7 +49,7 @@ function auth(req, res, next) {
 
 };
 
-const credentials = [
+/* const credentials = [
     {
         id: 12,
         nome: "jose",
@@ -97,23 +98,33 @@ const credentials = [
         api_key: "dfghr6btu567ShBf9Zb5345",
         secret_key: "4a66442881c80232c0d179iyg3hy3g5y6d36746e124554cd9bfeea3243456uhy34g5d-prod"
     }
-    /*,
-    {
-        id: 16,
-        nome: "aqmed",
-        api_key: "aqmedkey",
-        secret_key: "aqc95094bf6d23f6946f42cd7bd2eda5df282d1b258c94d3eef8411a371df4d0079e4887a32d21ed63c84a5b"
-    }*/
 
 
-]
+] */
 
-routerApi.post('/auth', (req, res) => {
+/* const credentials = await CredentialsApi.findAll({
+    attributes: ['id', 'nome', 'modo', 'api_key', 'secret_key'],
+    where: {
+        modo: 'producao'
+    }
+}); */
+
+routerApi.post('/auth', async(req, res) => {
     try {
 
         var { api_key, secret_key } = req.body;
-        let credentialKey = credentials.find(i => i.api_key == api_key);
-        console.log('api', api_key)
+        //let credentialKey = credentials.find(i => i.api_key == api_key);
+
+        let credentialKey = await CredentialsApi.findOne({
+            attributes: ['id', 'nome', 'modo', 'api_key', 'secret_key'],
+            where: {
+                modo: 'producao',
+                api_key: api_key
+            },
+            raw: true
+        });
+
+        console.log('api', api_key, credentialKey)
 
         if (credentialKey != undefined) {
             if (credentialKey.secret_key == secret_key) {
@@ -323,19 +334,19 @@ routerApi.post('/beneficiaries/activate/:cpf', auth, async (req, res) => {
                 "city": cliente[0].city,
                 "state": cliente[0].state,
                 "plans": [
-            {
-                "paymentType": "S",
-                "plan": {
-                    "uuid": "6676fb40-4b2f-4434-bd9c-ba6f38925c44"
-                }
-            },
-            {
-                "paymentType": "S",
-                "plan": {
-                    "uuid": "07f2e6a3-3c4a-40a0-9473-f05b91f9b159"
-                }
-            }
-        ]
+                    {
+                        "paymentType": "S",
+                        "plan": {
+                            "uuid": "6676fb40-4b2f-4434-bd9c-ba6f38925c44"
+                        }
+                    },
+                    {
+                        "paymentType": "S",
+                        "plan": {
+                            "uuid": "07f2e6a3-3c4a-40a0-9473-f05b91f9b159"
+                        }
+                    }
+                ]
                 /*"paymentType": cliente[0].paymentType,
                 "serviceType": cliente[0].serviceType,
                  "plans": [
@@ -918,7 +929,7 @@ routerApi.post('/oimed/specialty-availability', auth, async (req, res) => {
         console.log("resposta disponibilidade: ", response.data)
     } catch (error) {
         console.log(error)
-res.status(500).json({ success: false, message: error });
+        res.status(500).json({ success: false, message: error });
         //res.status(500).json({ success: false, message: error.response.data.message });
     }
 
