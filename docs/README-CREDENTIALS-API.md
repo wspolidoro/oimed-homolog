@@ -139,12 +139,24 @@ Ação no dropdown de cada parceiro.
 1. Usuário clica em "Ver Credenciais" no dropdown
 2. Abre modal listando todas as credenciais do parceiro
 3. Cada card contém: API URL, API Key, Secret Key + botão copiar
-4. Botão "Excluir Credencial" em cada card (100% largura)
+4. Botão "Ativar/Inativar Credencial" (azul) - toggle status via PUT
+5. Botão "Excluir Credencial" (vermelho) - 100% largura
 
 **Funções JavaScript:**
 - `openModalVerCredenciais(id, nome)` - Lista credenciais do parceiro
 - `copiarCredencial(inputId)` - Copia para clipboard
+- `toggleCredencialStatus(id, currentStatus)` - Ativa/Inativa via PUT
 - `deletarCredencial(id)` - Deleta com confirmação
+
+#### 3. Ativar/Inativar Credencial
+Botão azul no card de cada credencial.
+
+**Fluxo:**
+1. Usuário clica no botão (muda entre "Ativar" e "Inativar")
+2. Confirmação via SweetAlert
+3. Feedback visual (spinner) durante atualização
+4. Atualiza card via PUT `/api/credentialsApi/:id` com `{ status: 'ativo|inativo' }`
+5. Recarrega lista de credenciais
 
 ### Modais
 
@@ -228,8 +240,9 @@ assets/js/parceiros.js                # Funções JS (dropdown actions, modais, 
 - Dropdown "Ver Credenciais" no painel de parceiros
 - Modal de seleção Sandbox/Produção
 - Modal de visualização com botões de copiar
-- Função de deletar credenciais com confirmação
-- Feedback visual (spinner) durante carregamento
+- Botão "Ativar/Inativar Credencial" (azul) - toggle status via PUT
+- Botão "Excluir Credencial" (vermelho) - 100% largura
+- Feedback visual (spinner) durante todas as operações
 
 #### Modificado
 - `Routes.js` - Importado controller e adicionado endpoints
