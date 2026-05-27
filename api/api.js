@@ -124,7 +124,12 @@ routerApi.post('/auth', async(req, res) => {
             raw: true
         });
 
-        console.log('api', api_key, credentialKey)
+        console.log('api', api_key, credentialKey);
+
+        if(credentialKey.status != "ativo") {
+              res.json({ err: "Credenciais inválidas" });
+              return;
+        }
 
         if (credentialKey != undefined) {
             if (credentialKey.secret_key == secret_key) {
