@@ -2300,7 +2300,7 @@ router.get('/newFeat', (req, res) => {
 
 
 //SSO integrado
-router.post('/login/consulta', auth, loginConsulta.loginConsulta);
+router.post('/login/consulta', loginConsulta.loginConsulta);
 
 //credentialsApi CRUD
 router.get('/credentialsApi', auth, credentialsApiController.index);
