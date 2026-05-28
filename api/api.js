@@ -116,7 +116,7 @@ routerApi.post('/auth', async(req, res) => {
         //let credentialKey = credentials.find(i => i.api_key == api_key);
 
         let credentialKey = await CredentialsApi.findOne({
-            attributes: ['id', 'nome', 'modo', 'api_key', 'secret_key'],
+            attributes: ['id', 'nome', 'modo', 'api_key', 'secret_key', 'status'],
             where: {
                 modo: 'producao',
                 api_key: api_key
