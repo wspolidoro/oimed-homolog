@@ -1648,7 +1648,7 @@ router.put('/beneficiaries/reactivate/:cpf', async (req, res) => {
 
   const idFranqueado = await Clientes.findOne({
     where: {
-      cpf: cpfinformed
+      nu_documento: cpfinformed
     },
     raw: true
   });
