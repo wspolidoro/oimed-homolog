@@ -1646,7 +1646,7 @@ router.delete('/beneficiaries/:cpf', async (req, res) => {
 router.put('/beneficiaries/reactivate/:cpf', async (req, res) => {
   const cpfinformed = req.params.cpf;
 
-  const idFranqueado = await Franqueado.findOne({
+  const idFranqueado = await Clientes.findOne({
     where: {
       cpf: cpfinformed
     },
