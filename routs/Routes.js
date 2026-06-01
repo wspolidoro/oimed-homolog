@@ -181,15 +181,15 @@ router.post('/auth', async (req, res) => {
 router.put('/change/password/:idFranqueado', async (req, res) => {
   const idFranqueado = req.params.idFranqueado;
 
-    const alterarSenha = await Franqueado.update({
-        password: req.body.password
-    }, {
-        where: {
-            id: idFranqueado
-        }
-    });
+  const alterarSenha = await Franqueado.update({
+    password: req.body.password
+  }, {
+    where: {
+      id: idFranqueado
+    }
+  });
 
-    res.status(200).json({ success: true, message: "Senha alterada com sucesso!" });
+  res.status(200).json({ success: true, message: "Senha alterada com sucesso!" });
 });
 
 //rotas para wordpress
@@ -584,7 +584,7 @@ router.post('/franqueado/clientes', async (req, res) => {
       await mailerNewCadastroModel3(dataFranqueado[0].dataValues, emaildestino);
     } else {
       await mailerNewCadastro(dataFranqueado[0].dataValues, emaildestino); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
-    } 
+    }
 
 
     const arrayDefault = '[{"nm_cliente1":null,"nu_documento1":null,"birthday1":null,"email1":null,"telefone1":null,"zipCode1":null,"address1":null,"city1":null,"state1":null},{"nm_cliente2":null,"nu_documento2":null,"birthday2":null,"email2":null,"telefone2":null,"zipCode2":null,"address2":null,"city2":null,"state2":null},{"nm_cliente3":null,"nu_documento3":null,"birthday3":null,"email3":null,"telefone3":null,"zipCode3":null,"address3":null,"city3":null,"state3":null}]';
@@ -736,10 +736,10 @@ router.put('/franqueado/clientes/update', async (req, res) => {
         // 🚨 Se já existir, retorna imediatamente
         if (existingCliente) {
           continue;
-   /*        return res.status(200).json({
-            success: false,
-            message: `Cliente com CPF ${numericCpfNumber} já cadastrado`
-          }); */
+          /*        return res.status(200).json({
+                   success: false,
+                   message: `Cliente com CPF ${numericCpfNumber} já cadastrado`
+                 }); */
         }
 
         if (beneficiario["nm_cliente" + contador]) {
@@ -1646,11 +1646,21 @@ router.delete('/beneficiaries/:cpf', async (req, res) => {
 router.put('/beneficiaries/reactivate/:cpf', async (req, res) => {
   const cpfinformed = req.params.cpf;
 
-  try {
-    await AtivaUsuarioAlloyal(cpfinformed);
-  } catch (err) {
-    console.log("erro reativar aloyal 962", err.message)
+  const idFranqueado = await Franqueado.findOne({
+    where: {
+      cpf: cpfinformed
+    },
+    raw: true
+  });
+
+  if (idFranqueado.id_franqueado == 26) {
+    try {
+      await AtivaUsuarioAlloyal(cpfinformed);
+    } catch (err) {
+      console.log("erro reativar aloyal 1660", err.message)
+    }
   }
+
 
   try {
 
@@ -1676,7 +1686,7 @@ router.put('/beneficiaries/reactivate/:cpf', async (req, res) => {
       res.json(retorno.data)
     }
   } catch (err) {
-    console.log("caminho do erro: Routes.js linha 914 reativação")
+    console.log("caminho do erro: Routes.js linha 1679 reativação")
     //console.log("erro do reactivate: ", err)
   }
 });
