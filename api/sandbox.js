@@ -59,9 +59,18 @@ const credentials = [
     }
 ]
 
-routerSandbox.post('/auth', (req, res) => {
+routerSandbox.post('/auth', async (req, res) => {
     var { api_key, secret_key } = req.body;
-    let credentialKey = credentials.find(i => i.api_key == api_key);
+    //let credentialKey = credentials.find(i => i.api_key == api_key);
+
+    let credentialKey = await CredentialsApi.findOne({
+        attributes: ['id', 'nome', 'modo', 'api_key', 'secret_key', 'status'],
+        where: {
+            modo: 'sandbox',
+            api_key: api_key
+        },
+        raw: true
+    });
 
     if (credentialKey != undefined) {
         if (credentialKey.secret_key == secret_key) {
@@ -253,19 +262,19 @@ routerSandbox.post('/beneficiaries/activate/:cpf', auth, async (req, res) => {
                 "city": cliente[0].city,
                 "state": cliente[0].state,
                 "plans": [
-            {
-                "paymentType": "S",
-                "plan": {
-                    "uuid": "6676fb40-4b2f-4434-bd9c-ba6f38925c44"
-                }
-            },
-            {
-                "paymentType": "S",
-                "plan": {
-                    "uuid": "07f2e6a3-3c4a-40a0-9473-f05b91f9b159"
-                }
-            }
-        ]
+                    {
+                        "paymentType": "S",
+                        "plan": {
+                            "uuid": "6676fb40-4b2f-4434-bd9c-ba6f38925c44"
+                        }
+                    },
+                    {
+                        "paymentType": "S",
+                        "plan": {
+                            "uuid": "07f2e6a3-3c4a-40a0-9473-f05b91f9b159"
+                        }
+                    }
+                ]
                 /*"paymentType": cliente[0].paymentType,
                 "serviceType": "GSP",*/
                 /* "plans": [
