@@ -7,6 +7,10 @@
     },
     "servers": [
         {
+            "url": "http://localhost:3035/api/sandbox",
+            "description": "Development Server"
+        },
+        {
             "url": "https://parceiro.painelw.com.br/api/sandbox",
             "description": "Development Server"
         },

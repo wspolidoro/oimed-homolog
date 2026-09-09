@@ -96,7 +96,7 @@ routerSandbox.post('/auth', async (req, res) => {
         }
     } else {
         res.status(404);
-        res.json({ err: "os dados enviados não existe" });
+        res.json({ err: "os dados enviados não existe", credentialKey: credentialKey });
     }
 
 
