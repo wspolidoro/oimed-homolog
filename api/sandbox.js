@@ -11,6 +11,7 @@ const jwt = require('jsonwebtoken');
 const Franqueado = require('../schema/test/tb_franqueado');
 const Clientes = require('../schema/test/tb_clientes');
 const Rapidoc = require('../schema/test/tb_rapidoc');
+const CredentialsApi = require('../schema/tb_credentialsApi');
 
 //LIBS
 const { Op, Sequelize } = require('sequelize');
