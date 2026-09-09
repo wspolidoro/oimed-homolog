@@ -93,7 +93,7 @@ function webhookActivate(body, token, res) {
         fetch(urlProd, options)
             .then(res => res.json())
             .then(json => {
-                console.log(json.cpfCnpj);
+                console.log("sdsd", json, json.cpfCnpj);
                 alterarParaAtivo(json.cpfCnpj);
 
             })
@@ -102,6 +102,7 @@ function webhookActivate(body, token, res) {
         res.json({ success: true, message: "ok" });
 
     } else {
+        console.log("evento diferente: ", body.event);
         res.json({ success: true, message: "ok" });
     }
 };
