@@ -1510,6 +1510,31 @@ router.put('/franqueado/cliente/status', async (req, res) => {
 
 });
 
+//rota de testes para mudar situação do cliente no subpainel
+router.put('/subpainel/franqueado/cliente/status', async (req, res) => {
+  try {
+    const cliente = await SubClientes.update({
+      situacao: req.body.situacao,
+    }, {
+      where: {
+        [Op.or]: [
+          { id: req.body.id },
+          { nu_documento: req.body.id },
+        ]
+
+      }
+    });
+
+    res.json(cliente);
+    console.log(req.body)
+
+  } catch (err) {
+    res.status(400).json(err);
+    console.log(err)
+  }
+
+});
+
 //gerar PDF inscrição
 router.get('/pdf', async (req, response) => {
 
@@ -2245,7 +2270,7 @@ console.log("req.body", req.params)
     if (response.data.success == true) {
 
 
-      const clienteUpdate = await Clientes.update({
+      const clienteUpdate = await SubClientes.update({
         dtAtivacao: new Date()
       }, {
         where: { nu_documento: cpf }
