@@ -3,11 +3,13 @@ require('dotenv').config();
 
 //SCHEMAS
 const Clientes = require('../../schema/tb_clientes');
+const SubClientes = require('../../schema/tb_sub_clientes');
 const Sleeping = require('../../schema/tb_sleeping');
 
 //CONTROLLES
 const { sleep, wakeUp } = require('../sleeping/index.js');
 const { buscarClienteService } = require('../services/index.js');
+const { ativarBeneficiarioSubpainel } = require('../sub_franqueados/ativarBeneficiario.js');
 
 
 
@@ -17,10 +19,23 @@ module.exports = {
             console.log("chamar control", req.body);
             console.log("verificando....:", req.body == 1);
 
-            const cliente = await Clientes.findOne({
+            let cliente = await Clientes.findOne({
                 where: { nu_documento: req.body.nuCpf },
                 raw: true
             });
+
+            let isSubCliente = false;
+
+            if (!cliente) {
+                cliente = await SubClientes.findOne({
+                    where: { nu_documento: req.body.nuCpf },
+                    raw: true
+                });
+
+                if (cliente) {
+                    isSubCliente = true;
+                }
+            }
 
 
 
@@ -30,6 +45,15 @@ module.exports = {
                 console.log("cliente encontrado: ", cpf, senha, req.body.nuCpf, req.body.password);
 
                 if (req.body.nuCpf == cpf && req.body.password == senha) {
+                    if (isSubCliente) {
+                        try {
+                            console.log("Ativando subcliente na base antes do login:", cpf);
+                            await ativarBeneficiarioSubpainel(cpf);
+                        } catch (errAtivacao) {
+                            console.log("Erro ao ativar subcliente na base antes do login:", errAtivacao);
+                        }
+                    }
+
                     const isSleeping = await Sleeping.findOne({
                         where: { idVida: cpf },
                         raw: true
@@ -52,10 +76,12 @@ module.exports = {
                         } else {
                             const getCliente = await buscarClienteService(cpf);
 
-                            await Clientes.update(
-                                { uuid: getCliente.beneficiary.uuid },
-                                { where: { nu_documento: cpf } }
-                            );
+                            if (!isSubCliente) {
+                                await Clientes.update(
+                                    { uuid: getCliente.beneficiary.uuid },
+                                    { where: { nu_documento: cpf } }
+                                );
+                            }
 
                             res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${getCliente.beneficiary.uuid}` });
 
