@@ -33,12 +33,12 @@ async function ativarBeneficiarioSubpainel(cpf, body) {
 
         const arrBD = [
             {
-                "name": body.name,
-                "cpf": body.cpf,
+                "name": body.nm_cliente,
+                "cpf": body.nu_documento,
                 "birthday": birthdayFormat,
-                "phone": body.phone,
+                "phone": body.telefone,
                 "email": body.email,
-                "zipCode": body.zipCode,
+                "zipCode": body.zip_code,
                 "address": body.address,
                 "city": body.city,
                 "state": body.state,
@@ -209,7 +209,7 @@ async function ativarBeneficiarioSubpainel(cpf, body) {
             await sendMailError(arrBD, "Vida cadastrada na Central principal", response.data, cliente[0].id_franqueado, "CONCLUIDO");
             return { success: true, data: response.data };
         } else {
-            console.log("erro ao criar: ", response.data);
+            console.log("erro ao criar: ", arrBD, response.data);
             await sendMailError(arrBD, "Vida não cadastrada na Central principal", response.data, cliente[0].id_franqueado, "PENDENTE");
             return { success: false, data: response.data };
         }

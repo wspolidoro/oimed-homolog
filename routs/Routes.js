@@ -48,7 +48,7 @@ const { CriarUsuarioAlloyal, InativaUsuarioAlloyal, AtivaUsuarioAlloyal } = requ
 //MULTER
 const multer = require('multer');
 const path = require('path');
-const upload = multer({ dest: path.join(__dirname, '../uploads/temp')});
+const upload = multer({ dest: path.join(__dirname, '../uploads/temp') });
 
 
 //LIBS
@@ -700,6 +700,300 @@ router.put('/franqueado/clientes/update', async (req, res) => {
 
 
     // console.log("mycliente", numericCpfNumber)
+
+    try {
+      const selectCobertura = await Clientes.update({
+        cobertura: req.body.cobertura,
+      }, {
+        where: {
+          [Op.or]: [
+            { nu_documento: numericCpfNumber },
+            { cpf_titular: numericCpfNumber }
+          ]
+        }
+      });
+      criarDependenteGeral()
+    } catch (err) {
+      console.log("Erro ao atualizar cliente:", err);
+    }
+
+
+
+    async function criarDependenteGeral() {
+      const arrayDefault = '[{"nm_cliente1":null,"nu_documento1":null,"birthday1":null,"email1":null,"telefone1":null,"zipCode1":null,"address1":null,"city1":null,"state1":null},{"nm_cliente2":null,"nu_documento2":null,"birthday2":null,"email2":null,"telefone2":null,"zipCode2":null,"address2":null,"city2":null,"state2":null},{"nm_cliente3":null,"nu_documento3":null,"birthday3":null,"email3":null,"telefone3":null,"zipCode3":null,"address3":null,"city3":null,"state3":null}]';
+
+      let userExiste = false;
+
+      for (let i = 0; i < req.body.beneficiarios.length; i++) {
+
+        const beneficiario = req.body.beneficiarios[i];
+        const contador = i + 1;
+
+        const cpf = beneficiario["nu_documento" + contador];
+
+        if (!cpf) continue;
+
+        const numericCpfNumber = cpf.replace(/\D/g, "");
+
+        const existingCliente = await Clientes.findOne({
+          where: { nu_documento: numericCpfNumber }
+        });
+
+        // 🚨 Se já existir, retorna imediatamente
+        if (existingCliente) {
+          continue;
+          /*        return res.status(200).json({
+                   success: false,
+                   message: `Cliente com CPF ${numericCpfNumber} já cadastrado`
+                 }); */
+        }
+
+        if (beneficiario["nm_cliente" + contador]) {
+
+          await Clientes.create({
+            nm_cliente: beneficiario["nm_cliente" + contador],
+            nu_documento: numericCpfNumber,
+            birthday: beneficiario["birthday" + contador],
+            telefone: beneficiario["telefone" + contador],
+            email: beneficiario["email" + contador],
+            zip_code: beneficiario["zipCode" + contador],
+            address: beneficiario["address" + contador],
+            city: beneficiario["city" + contador],
+            state: beneficiario["state" + contador],
+            dt_venda: "default",
+            situacao: "Pendente",
+            nu_parcelas: "default",
+            vl_venda: "default",
+            dt_cobranca: "default",
+            dt_vencimento: "default",
+            dt_pagamento: "default",
+            par_atual: "default",
+            paymentType: req.body.paymentType,
+            serviceType: req.body.serviceType,
+            cobertura: req.body.cobertura,
+            link: "default",
+            beneficiarios: arrayDefault,
+            id_franqueado: req.body.id_franqueado,
+            cpf_titular: req.body.nu_documento
+          });
+
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: "Atualizado com sucesso"
+      });
+
+
+      // if (newCliente) {
+      /*  let userExiste = false;
+ 
+       req.body.beneficiarios.map(async (beneficiario, i) => {
+         var contador = i + 1;
+ 
+         if (!beneficiario["nu_documento" + contador]) {
+           console.log("debug: ", beneficiario["nu_documento" + contador])
+           return;
+         }
+ 
+         var cpfNumber = beneficiario["nu_documento" + contador];
+         var numericCpfNumber = cpfNumber.replace(/\D/g, "");
+ 
+         const existingCliente = await Clientes.findOne({
+           where: {
+             nu_documento: numericCpfNumber
+           }
+         });
+ 
+         if (existingCliente) {
+           userExiste = true;
+           return;
+           //return res.status(400).json({ success: false, message: "Cliente já cadastrado" });
+         }
+ 
+ 
+         if (beneficiario["nm_cliente" + contador] != null) {
+           try {
+             const newBeneficiario = await Clientes.create({
+               nm_cliente: beneficiario["nm_cliente" + contador],
+               nu_documento: beneficiario["nu_documento" + contador],
+               birthday: beneficiario["birthday" + contador],
+               telefone: beneficiario["telefone" + contador],
+               email: beneficiario["email" + contador],
+               zip_code: beneficiario["zipCode" + contador],
+               address: beneficiario["address" + contador],
+               city: beneficiario["city" + contador],
+               state: beneficiario["state" + contador],
+               dt_venda: "default",
+               situacao: "Pendente",
+               nu_parcelas: "default",
+               vl_venda: "default",
+               dt_cobranca: "default",
+               dt_vencimento: "default",
+               dt_pagamento: "default",
+               par_atual: "default",
+               paymentType: req.body.paymentType,
+               serviceType: req.body.serviceType,
+               cobertura: req.body.cobertura,
+               link: "default",
+               beneficiarios: arrayDefault,
+               id_franqueado: req.body.id_franqueado,
+               cpf_titular: req.body.nu_documento
+             }, {
+               where: {
+                 nu_documento: beneficiario["nu_documento" + contador]
+               }
+             });
+           } catch (err) {
+             const newBeneficiario = await Clientes.update({
+               nm_cliente: beneficiario["nm_cliente" + contador],
+               nu_documento: beneficiario["nu_documento" + contador],
+               birthday: beneficiario["birthday" + contador],
+               telefone: beneficiario["telefone" + contador],
+               email: beneficiario["email" + contador],
+               zip_code: beneficiario["zipCode" + contador],
+               address: beneficiario["address" + contador],
+               city: beneficiario["city" + contador],
+               state: beneficiario["state" + contador],
+               dt_venda: "default",
+               //situacao: "Pendente",
+               nu_parcelas: "default",
+               vl_venda: "default",
+               dt_cobranca: "default",
+               dt_vencimento: "default",
+               dt_pagamento: "default",
+               par_atual: "default",
+               paymentType: req.body.paymentType,
+               serviceType: req.body.serviceType,
+               cobertura: req.body.cobertura,
+               link: "default",
+               beneficiarios: arrayDefault,
+               id_franqueado: req.body.id_franqueado,
+               cpf_titular: req.body.nu_documento
+             }, {
+               where: {
+                 nu_documento: beneficiario["nu_documento" + contador]
+               }
+             });
+           }
+ 
+         }
+ 
+       });
+ 
+       if (userExiste) {
+         console.log(userExiste)
+         return res.status(400).json({ success: false, message: "Cliente já cadastrado" });
+       } else {
+         res.json({ success: true, message: "atualizado com sucesso" });
+ 
+       } */
+
+      //}
+    };
+
+
+
+
+    //res.json(newCliente);
+
+  } catch (err) {
+    res.status(400)
+    res.json(err)
+    console.log(err)
+  }
+
+});
+
+//mudar isso de lugar, temporario
+router.put('/subfranqueado/clientes/update', async (req, res) => {
+  try {
+
+
+    console.log("request de atualização", req.body);
+
+
+    var cpfNumber = req.body.nu_documento;
+    var numericCpfNumber = cpfNumber.replace(/\D/g, "");
+
+    var cpfOriginal = req.body.documento_original;
+    var numericCpfOriginal = cpfOriginal.replace(/\D/g, "");
+
+    //console.log(numericCpfNumber);
+
+    const idSubFranqueado = await SubClientes.findOne({
+      where: {
+        nu_documento: numericCpfNumber
+      },
+      raw: true,
+      attributes: ['id_franqueado']
+    });
+
+    console.log("idSubFranqueado", idSubFranqueado);
+
+    const newCliente = await SubClientes.update({
+      nm_cliente: req.body.nm_cliente,
+      nu_documento: numericCpfNumber,
+      birthday: req.body.birthday,
+      telefone: req.body.telefone,
+      email: req.body.email,
+      zip_code: req.body.zip_code,
+      address: req.body.address,
+      city: req.body.city,
+      state: req.body.state,
+      dt_venda: "default",
+      //situacao: "ativo",
+      nu_parcelas: "default",
+      vl_venda: "default",
+      dt_cobranca: "default",
+      dt_vencimento: "default",
+      dt_pagamento: "default",
+      par_atual: "default",
+      paymentType: req.body.paymentType,
+      serviceType: req.body.serviceType,
+      link: req.body.link,
+      beneficiarios: JSON.stringify(req.body.beneficiarios),
+      id_franqueado: idSubFranqueado.id_franqueado,
+      //cpf_titular: "titular"
+    }, {
+      where: {
+        [Op.or]: [
+          { nu_documento: numericCpfOriginal },
+          { nu_documento: cpfOriginal },
+          { nu_documento: cpfNumber },
+          { nu_documento: numericCpfNumber },
+        ]
+      }
+    });
+
+
+
+    console.log("mycliente", {
+      nm_cliente: req.body.nm_cliente,
+      nu_documento: numericCpfNumber,
+      birthday: req.body.birthday,
+      telefone: req.body.telefone,
+      email: req.body.email,
+      zip_code: req.body.zip_code,
+      address: req.body.address,
+      city: req.body.city,
+      state: req.body.state,
+      dt_venda: "default",
+      //situacao: "ativo",
+      nu_parcelas: "default",
+      vl_venda: "default",
+      dt_cobranca: "default",
+      dt_vencimento: "default",
+      dt_pagamento: "default",
+      par_atual: "default",
+      paymentType: req.body.paymentType,
+      serviceType: req.body.serviceType,
+      link: req.body.link,
+      beneficiarios: JSON.stringify(req.body.beneficiarios),
+      id_franqueado: idSubFranqueado.id_franqueado,
+      //cpf_titular: "titular"
+    })
 
     try {
       const selectCobertura = await Clientes.update({
@@ -1725,7 +2019,7 @@ router.put('/beneficiaries/reactivate/:cpf', async (req, res) => {
 ///ativar vida manualmente via painel oimed
 router.post('/beneficiaries/create/:cpf', async (req, res) => {
   const cpf = req.params.cpf;
-console.log("req.body", req.params)
+  console.log("req.body", req.params)
 
   if (req.body == 1) {
 
@@ -2126,7 +2420,7 @@ router.post('/oimed/webhook/:id', async (req, res) => {
     });
 
     webhookActivate(req.body, token[0].tokenAsaas, res);
-    
+
   } else if (eventType === "PAYMENT_OVERDUE") {
     const token = await Franqueado.findAll({
       where: {
