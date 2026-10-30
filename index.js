@@ -1,6 +1,11 @@
 require('dotenv').config();
 const express = require('express');
 const app = express();
+
+// Configuração para servidores com proxy reverso (cPanel, Apache, Nginx, Cloudflare)
+// Permite que o Express identifique o IP real do cliente através do cabeçalho X-Forwarded-For
+app.set('trust proxy', 1);
+
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -46,6 +51,7 @@ const apiLimiter = rateLimit({
   max: 2000, // 2000 requisições por IP a cada 15 min
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: { success: false, message: "Muitas requisições originadas deste IP. Tente novamente mais tarde." }
 });
 
@@ -54,6 +60,7 @@ const authLimiter = rateLimit({
   max: 25, // 25 tentativas de login por IP a cada 15 min
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: { success: false, message: "Muitas tentativas de login consecutivas. Por segurança, tente novamente em 15 minutos." }
 });
 
