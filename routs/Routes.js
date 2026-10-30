@@ -6,6 +6,7 @@ const router = express.Router();
 const { sequelize, sandbox } = require('../db');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { faker } = require('@faker-js/faker');
 const mailer = require('./sendMailer');
 
@@ -55,147 +56,233 @@ const upload = multer({ dest: path.join(__dirname, '../uploads/temp') });
 const { Op, Sequelize, literal } = require('sequelize');
 //const { Op, literal } = require('sequelize');
 
-const secretKey = "@rfxzsklc_s+bg7t+@f6^obve=f!swr1%0838lctalor92vi";
+const secretKey = process.env.JWT_SECRET || "@rfxzsklc_s+bg7t+@f6^obve=f!swr1%0838lctalor92vi";
 
-//middleware
-router.use(function timelog(req, res, next) {
-  console.log('Time: ', Date.now());
-  console.log(req.body);
-  console.log(`URL solicitada: ${req.get('host')} - ${req.originalUrl}`);
+// Helper para extrair o token JWT de cabeçalhos ou query
+function extractToken(req) {
+  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+  if (authHeader) {
+    const parts = authHeader.split(' ');
+    if (parts.length === 2 && /^Bearer$/i.test(parts[0])) {
+      return parts[1];
+    }
+    return authHeader.trim();
+  }
+  if (req.headers['x-access-token']) {
+    return req.headers['x-access-token'];
+  }
+  if (req.query && req.query.token) {
+    return req.query.token;
+  }
+  return null;
+}
+
+// Whitelist rigorosa de rotas públicas (que não necessitam de token JWT)
+function isPublicRoute(req) {
+  const path = req.path;
+  const method = req.method.toUpperCase();
+
+  // Permite preflight de CORS
+  if (method === 'OPTIONS') return true;
+
+  // Healthcheck raiz
+  if (method === 'GET' && (path === '/' || path === '/newFeat')) return true;
+
+  // Endpoints públicos de login e autenticação
+  if (method === 'POST') {
+    if (path === '/auth' || path === '/wp/auth' || path === '/wp/login' || path === '/login/consulta') {
+      return true;
+    }
+    // Formulários públicos externos de cadastro
+    if (path === '/wp/clientes/newform' || path === '/cadastrar/clientes/newform') {
+      return true;
+    }
+    // Webhooks externos de pagamentos / integrações parceiras
+    if (path.startsWith('/oimed/webhook/') || path === '/conectamed/notification') {
+      return true;
+    }
+  }
+
+  // Crons de cobrança externa
+  if (method === 'GET' && (path === '/payment/reminder/7' || path === '/payment/reminder/1')) {
+    return true;
+  }
+
+  return false;
+}
+
+// Log seguro (evita vazar senhas, tokens e dados sensíveis de pacientes nos logs do servidor)
+router.use(function secureLog(req, res, next) {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   next();
 });
 
-function privateAuth(req, res, next) {
-  const authToken = req.headers['authorization'];
-
-  if (authToken != undefined) {
-
-    const bearer = authToken.split(' ');
-    var token = bearer[1];
-
-    jwt.verify(token, secretKey, (err, data) => {
-      if (err) {
-        res.status(401);
-        res.json({ success: false, message: "Token inválido" })
-      } else {
-        req.token = token;
-        req.loggerUser = { id: data.id, email: data.email };
-        next();
-      }
-    });
-
-  } else {
-    res.status(401);
-    res.json({ success: false, message: "Token inválido" });
+// Middleware Global de Autenticação - Bloqueia qualquer endpoint fora da whitelist
+function globalAuth(req, res, next) {
+  if (isPublicRoute(req)) {
+    return next();
   }
-};
 
-//teste
-router.post('/wp/clientes/newform', cadastroNewFormFromWoo.cadastrarVida);
+  const token = extractToken(req);
 
-//--------------------authetication--------------------------->
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Acesso não autorizado. Token de autenticação não fornecido."
+    });
+  }
+
+  jwt.verify(token, secretKey, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({
+        success: false,
+        message: "Acesso não autorizado. Token inválido ou expirado."
+      });
+    }
+
+    req.token = token;
+    req.user = decoded;
+    req.loggerUser = decoded;
+    next();
+  });
+}
+
+// Aplica autenticação globalmente a todas as rotas deste router
+router.use(globalAuth);
+
+// Compatibilidade para rotas que referenciam auth explicitamente
 function auth(req, res, next) {
-  const authToken = req.headers['authorization'];
+  if (req.user) {
+    return next();
+  }
+  return globalAuth(req, res, next);
+}
 
-
-  if (authToken != undefined) {
-
-    const bearer = authToken.split(' ');
-    let token = bearer[1];
-
-    jwt.verify(token, secretKey, (err, data) => {
-      if (err) {
-        res.status(401);
-        res.json({ success: false, message: "Token inválido" });
-      } else {
-        req.token = token;
-        req.user = { id: data.id, nome: data.nome };
-
-        next();
-      }
-    });
-
-  } else {
-    res.status(401);
-    res.json({ success: false, message: "Token Inválido" });
+// Middleware exclusivo para Administradores (valida autoridade e perfil a partir do token assinado)
+function adminAuth(req, res, next) {
+  const user = req.user;
+  if (!user) {
+    return res.status(401).json({ success: false, message: "Acesso não autorizado. Token ausente ou inválido." });
   }
 
-};
+  if (user.autoridade !== 1 && user.perfil !== 'master') {
+    return res.status(403).json({ success: false, message: "Acesso restrito apenas a Administradores." });
+  }
+  next();
+}
+
+// Formulário público do WooCommerce
+router.post('/wp/clientes/newform', cadastroNewFormFromWoo.cadastrarVida);
 
 
 router.post('/auth', async (req, res) => {
-
   var { email, password } = req.body;
-  email = String(email).trim();
-  password = String(password).trim();
-
-  //console.log(email, password)
-
-
-  try {
-    if (email != undefined) {
-
-      //var user = DB.users.find(u => u.email == email);
-
-      const linkFranqueado = await Franqueado.findAll();
-
-      //res.json(linkFranqueado);
-
-      var user = linkFranqueado.find(u => u.email == email);
-
-
-      //res.json(user);
-
-      if (user != undefined) {
-        if (user.password == password && user.status == "ativo") {
-
-          jwt.sign({ id: user.id, email: user.email, role: user.subPaineis, autoridade: user.autoridade }, secretKey, { expiresIn: '1h' }, (err, token) => {
-            if (err) {
-              res.status(400);
-              res.json({ success: false, message: "Falha interna..." })
-            } else {
-              res.status(200);
-              res.json({
-                success: true,
-                message: "usuario logado",
-                token: token,
-                perfil: user.perfil,
-                id: user.id
-              });
-            }
-          });
-        } else {
-          res.status(404);
-          res.json({ success: false, message: "acesso invalido" });
-        }
-      } else {
-        res.status(404);
-        res.json({ success: false, message: "email não encontrado" });
-      };
-
-    } else {
-      res.status(400);
-      res.json({ success: false, message: "email invalido" })
-    };
-  } catch (err) {
-    res.json({ "success": false, "message": err })
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: "E-mail e senha são obrigatórios." });
   }
 
+  email = String(email).trim().toLowerCase();
+  password = String(password).trim();
 
+  try {
+    const user = await Franqueado.findOne({
+      where: { email: email }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "E-mail não encontrado ou credenciais inválidas." });
+    }
+
+    let passwordMatches = false;
+    // 1. Tenta validar via hash bcrypt
+    try {
+      passwordMatches = bcrypt.compareSync(password, user.password);
+    } catch (e) {
+      passwordMatches = false;
+    }
+
+    // 2. Se não bateu via bcrypt, verifica se ainda é senha em texto puro (migração transparente)
+    if (!passwordMatches && user.password === password) {
+      passwordMatches = true;
+      // Atualiza automaticamente o registro no banco com hash seguro bcrypt
+      try {
+        const hashedPassword = bcrypt.hashSync(password, 10);
+        await Franqueado.update({ password: hashedPassword }, { where: { id: user.id } });
+        console.log(`[Segurança] Senha do usuário ID ${user.id} migrada para hash bcrypt com sucesso.`);
+      } catch (errHash) {
+        console.error("Erro ao atualizar hash de senha:", errHash);
+      }
+    }
+
+    if (!passwordMatches || user.status !== "ativo") {
+      return res.status(401).json({ success: false, message: "Credenciais inválidas ou usuário inativo." });
+    }
+
+    const tokenPayload = {
+      id: user.id,
+      email: user.email,
+      nome: user.nome || '',
+      role: user.subPaineis,
+      autoridade: user.autoridade,
+      perfil: user.perfil || (user.autoridade === 1 ? 'master' : (user.subPaineis ? 'sub' : 'parceiro')),
+      products: user.products
+    };
+
+    jwt.sign(tokenPayload, secretKey, { expiresIn: '8h' }, (err, token) => {
+      if (err) {
+        console.error("Erro ao assinar JWT:", err);
+        return res.status(500).json({ success: false, message: "Falha interna ao gerar token de acesso." });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Usuário autenticado com sucesso",
+        token: token,
+        perfil: tokenPayload.perfil,
+        id: user.id,
+        nome: user.nome,
+        products: user.products,
+        role: user.subPaineis,
+        autoridade: user.autoridade
+      });
+    });
+  } catch (err) {
+    console.error("Erro na autenticação:", err);
+    res.status(500).json({ success: false, message: "Erro no servidor ao processar login." });
+  }
 });
 
 router.put('/change/password/:idFranqueado', async (req, res) => {
   const idFranqueado = req.params.idFranqueado;
 
-  const alterarSenha = await Franqueado.update({
-    password: req.body.password
-  }, {
-    where: {
-      id: idFranqueado
-    }
-  });
+  // Garante que o usuário só pode alterar sua própria senha, a menos que seja administrador
+  const isSelf = req.user && String(req.user.id) === String(idFranqueado);
+  const isAdmin = req.user && (req.user.autoridade === 1 || req.user.perfil === 'master');
 
-  res.status(200).json({ success: true, message: "Senha alterada com sucesso!" });
+  if (!isSelf && !isAdmin) {
+    return res.status(403).json({ success: false, message: "Acesso negado: Você não tem permissão para alterar a senha deste franqueado." });
+  }
+
+  const newPassword = req.body.password ? String(req.body.password).trim() : '';
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ success: false, message: "A nova senha deve ter no mínimo 6 caracteres." });
+  }
+
+  try {
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+    await Franqueado.update({
+      password: hashedPassword
+    }, {
+      where: {
+        id: idFranqueado
+      }
+    });
+
+    res.status(200).json({ success: true, message: "Senha alterada com sucesso!" });
+  } catch (err) {
+    console.error("Erro ao alterar senha:", err);
+    res.status(500).json({ success: false, message: "Erro interno ao atualizar senha." });
+  }
 });
 
 //rotas para wordpress
@@ -332,7 +419,7 @@ router.get('/', async (req, res) => {
 });
 
 //rota de testes para adicionar franqueados
-router.post('/franqueado', async (req, res) => {
+router.post('/franqueado', adminAuth, async (req, res) => {
 
   try {
     await sequelize.sync();
@@ -340,12 +427,15 @@ router.post('/franqueado', async (req, res) => {
     console.log(req.body);
 
 
+    const rawPassword = req.body.password ? String(req.body.password).trim() : faker.string.hexadecimal({ length: 12 });
+    const hashedPassword = bcrypt.hashSync(rawPassword, 10);
+
     const newFranqueado = await Franqueado.create({
       nome: req.body.nome,
       cpf: req.body.cpf,
       telefone: req.body.telefone,
       email: req.body.email,
-      password: faker.string.hexadecimal({ length: 12 }),
+      password: hashedPassword,
       total_clientes: '0',
       vendas: '0',
       dado_banc: req.body.nu_banco,
@@ -389,13 +479,10 @@ router.post('/franqueado', async (req, res) => {
       })
     );
 
-
-
-
-
-    //console.log(req.body) 
-
-    res.json(newFranqueado);
+    res.json({
+      ...newFranqueado.dataValues,
+      temporaryPassword: rawPassword
+    });
 
   } catch (err) {
     return res.status(400).json(err)
@@ -403,8 +490,170 @@ router.post('/franqueado', async (req, res) => {
 
 });
 
+// Obter personalização visual do painel do parceiro
+router.get('/franqueado/customizacao', async (req, res) => {
+  try {
+    const isAdmin = req.user && (req.user.autoridade === 1 || req.user.perfil === 'master');
+    const partnerId = (isAdmin && req.query.partnerId) ? req.query.partnerId : (req.user?.id || req.query.id);
+
+    if (!partnerId) {
+      return res.status(400).json({ success: false, message: 'Identificador do parceiro ausente' });
+    }
+
+    const franqueado = await Franqueado.findOne({
+      where: { id: partnerId },
+      attributes: ['id', 'nome', 'siteTitle', 'customizacao']
+    });
+
+    if (!franqueado) {
+      return res.status(404).json({ success: false, message: 'Parceiro não encontrado' });
+    }
+
+    let customData = null;
+    if (franqueado.customizacao) {
+      try {
+        customData = typeof franqueado.customizacao === 'string'
+          ? JSON.parse(franqueado.customizacao)
+          : franqueado.customizacao;
+      } catch (e) {
+        customData = null;
+      }
+    }
+
+    // Padrões se não houver customização configurada
+    const defaultConfig = {
+      logoUrl: '',
+      primaryColor: '#2563eb',
+      secondaryColor: '#1d4ed8',
+      brandName: franqueado.siteTitle || franqueado.nome || 'OIMED',
+      sidebarTheme: 'dark'
+    };
+
+    const finalConfig = {
+      ...defaultConfig,
+      ...(customData || {})
+    };
+
+    return res.json({
+      success: true,
+      partnerId: franqueado.id,
+      customizacao: finalConfig
+    });
+  } catch (error) {
+    console.error('Erro ao buscar customizacao:', error);
+    return res.status(500).json({ success: false, message: 'Erro interno ao consultar personalização' });
+  }
+});
+
+// Salvar/atualizar personalização visual do painel do parceiro
+router.put('/franqueado/customizacao', async (req, res) => {
+  try {
+    const isAdmin = req.user && (req.user.autoridade === 1 || req.user.perfil === 'master');
+    const partnerId = (isAdmin && req.body.partnerId) ? req.body.partnerId : req.user?.id;
+
+    if (!partnerId) {
+      return res.status(400).json({ success: false, message: 'Identificador do parceiro não informado' });
+    }
+
+    const franqueado = await Franqueado.findOne({ where: { id: partnerId } });
+    if (!franqueado) {
+      return res.status(404).json({ success: false, message: 'Parceiro não encontrado' });
+    }
+
+    // Validação de permissão: apenas administradores ou parceiros com módulo 'personalizacao' liberado
+    if (!isAdmin) {
+      let hasPerm = false;
+      if (franqueado.products) {
+        try {
+          const prods = typeof franqueado.products === 'string' ? JSON.parse(franqueado.products) : franqueado.products;
+          if (Array.isArray(prods) && prods.includes('personalizacao')) {
+            hasPerm = true;
+          }
+        } catch {
+          if (typeof franqueado.products === 'string' && franqueado.products.includes('personalizacao')) {
+            hasPerm = true;
+          }
+        }
+      }
+      if (!hasPerm) {
+        return res.status(403).json({
+          success: false,
+          message: 'Você não possui permissão para personalizar o painel. Solicite a liberação deste módulo ao administrador.'
+        });
+      }
+    }
+
+    let currentCustom = {};
+    if (franqueado.customizacao) {
+      try {
+        currentCustom = typeof franqueado.customizacao === 'string'
+          ? JSON.parse(franqueado.customizacao)
+          : franqueado.customizacao;
+      } catch (e) {
+        currentCustom = {};
+      }
+    }
+
+    const { logoUrl, primaryColor, secondaryColor, brandName, sidebarTheme, ...extraConfig } = req.body;
+
+    // Sanitiza e mescla configurações
+    const updatedCustom = {
+      ...currentCustom,
+      ...extraConfig,
+      logoUrl: logoUrl !== undefined ? logoUrl : (currentCustom.logoUrl || ''),
+      primaryColor: primaryColor || currentCustom.primaryColor || '#2563eb',
+      secondaryColor: secondaryColor || currentCustom.secondaryColor || '#1d4ed8',
+      brandName: brandName !== undefined ? brandName : (currentCustom.brandName || franqueado.siteTitle || franqueado.nome || 'OIMED'),
+      sidebarTheme: sidebarTheme || currentCustom.sidebarTheme || 'dark',
+      updatedAt: new Date().toISOString()
+    };
+
+    const updateFields = {
+      customizacao: JSON.stringify(updatedCustom)
+    };
+
+    if (brandName) {
+      updateFields.siteTitle = brandName;
+    }
+
+    await Franqueado.update(updateFields, { where: { id: partnerId } });
+
+    return res.json({
+      success: true,
+      message: 'Personalização salva com sucesso!',
+      customizacao: updatedCustom
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar customizacao:', error);
+    return res.status(500).json({ success: false, message: 'Erro interno ao salvar personalização' });
+  }
+});
+
 //rota de testes para atualizar franqueados
-router.put('/franqueado/:clientId', async (req, res) => {
+router.put('/franqueado/putproducts', adminAuth, async (req, res) => {
+  try {
+    const rawProducts = req.body.products;
+    const productsStr = typeof rawProducts === 'object' ? JSON.stringify(rawProducts) : String(rawProducts || '[]');
+    const hasSubPaineis = productsStr.includes('sub-paineis');
+
+    await Franqueado.update({
+      products: productsStr,
+      subPaineis: hasSubPaineis
+    }, {
+      where: {
+        id: req.body.id,
+      }
+    });
+
+    res.json({ success: true, message: "Permissões atualizadas com sucesso", products: productsStr });
+
+  } catch (err) {
+    console.error("Erro ao atualizar produtos/permissões:", err);
+    return res.status(400).json({ success: false, message: "Erro ao atualizar permissões", error: err.message });
+  }
+});
+
+router.put('/franqueado/:clientId', adminAuth, async (req, res) => {
   try {
 
     const newFranqueado = await Franqueado.update({
@@ -479,25 +728,7 @@ router.put('/franqueado/:clientId', async (req, res) => {
 
 });
 
-router.put('/franqueado/putproducts', async (req, res) => {
-  try {
-    await sequelize.sync();
 
-    const newFranqueado = await Franqueado.update({
-      products: req.body.products
-    }, {
-      where: {
-        id: req.body.id,
-      }
-
-    });
-
-    res.json(newFranqueado);
-
-  } catch (err) {
-    return res.status(400);
-  }
-});
 
 
 //------------Rota para WP FORMS--------------------------------------->
@@ -712,7 +943,7 @@ router.put('/franqueado/clientes/update', async (req, res) => {
           ]
         }
       });
-      criarDependenteGeral()
+      await criarDependenteGeral();
     } catch (err) {
       console.log("Erro ao atualizar cliente:", err);
     }
@@ -724,9 +955,10 @@ router.put('/franqueado/clientes/update', async (req, res) => {
 
       let userExiste = false;
 
-      for (let i = 0; i < req.body.beneficiarios.length; i++) {
-
-        const beneficiario = req.body.beneficiarios[i];
+      const beneficiariosList = Array.isArray(req.body.beneficiarios) ? req.body.beneficiarios : [];
+      for (let i = 0; i < beneficiariosList.length; i++) {
+        const beneficiario = beneficiariosList[i];
+        if (!beneficiario) continue;
         const contador = i + 1;
 
         const cpf = beneficiario["nu_documento" + contador];
@@ -1468,79 +1700,165 @@ router.post('/cliente/filter/plan/:plan', async (req, res) => {
 
 //buscar lista de franqueados
 router.get('/franqueado/list', async (req, res) => {
-  const linkFranqueado = await Franqueado.findAll({
+  const isAdmin = req.user && (req.user.autoridade === 1 || req.user.perfil === 'master');
+
+  const queryOptions = {
     include: [{
       model: relacPlanos,
       as: 'planos'
     }]
-  });
+  };
+
+  // SEGURANÇA: Se não for Administrador Master, só pode listar o seu próprio registro
+  if (!isAdmin) {
+    queryOptions.where = { id: req.user.id };
+  }
+
+  const linkFranqueado = await Franqueado.findAll(queryOptions);
   countClients();
 
   res.json(linkFranqueado);
-
 });
 
 //buscar franqueados unico
 router.post('/franqueado/listunique', async (req, res) => {
-  const linkFranqueado = await Franqueado.findAll({
-    where: {
-      nome: {
-        [Op.like]: `${req.body.cpf}%`
-      }
+  const isAdmin = req.user && (req.user.autoridade === 1 || req.user.perfil === 'master');
+
+  const whereClause = {
+    nome: {
+      [Op.like]: `${req.body.cpf}%`
     }
+  };
+
+  if (!isAdmin) {
+    whereClause.id = req.user.id;
+  }
+
+  const linkFranqueado = await Franqueado.findAll({
+    where: whereClause
   });
 
   res.json(linkFranqueado);
+});
 
+// Atributos seguros e necessários para operações da tela de Clientes (remove campos mortos/lixo do banco)
+const CLIENT_SAFE_ATTRIBUTES = [
+  'id',
+  'nm_cliente',
+  'nu_documento',
+  'birthday',
+  'telefone',
+  'email',
+  'zip_code',
+  'address',
+  'city',
+  'state',
+  'paymentType',
+  'serviceType',
+  'situacao',
+  'cobertura',
+  'cpf_titular',
+  'beneficiarios',
+  'id_franqueado',
+  'dtAtivacao',
+  'dtDesativacao',
+  'createdAt',
+  'updatedAt'
+];
+
+const SUBCLIENT_SAFE_ATTRIBUTES = [
+  'id',
+  'nm_cliente',
+  'nu_documento',
+  'birthday',
+  'telefone',
+  'email',
+  'zip_code',
+  'address',
+  'city',
+  'state',
+  'paymentType',
+  'serviceType',
+  'situacao',
+  'cpf_titular',
+  'beneficiarios',
+  'id_franqueado',
+  'dtAtivacao',
+  'dtDesativacao',
+  'createdAt',
+  'updatedAt'
+];
+
+//buscar lista de clientes para agendamento
+router.post('/franqueado/clientes/list/agenda', async (req, res) => {
+  const isAdmin = req.user && (req.user.autoridade === 1 || req.user.perfil === 'master');
+  // Se não for admin, força estritamente o id autenticado no token!
+  const targetId = isAdmin ? (req.body.id || req.user.id) : req.user.id;
+
+  if (req.body.subpainel && req.query.subList !== "null") {
+    const nmClientes = await Clientes.findAll({
+      attributes: CLIENT_SAFE_ATTRIBUTES,
+      where: { id_franqueado: targetId }
+    });
+
+    return res.json({ success: true, message: nmClientes });
+  }
+
+  const nmClientes = await Clientes.findAll({
+    attributes: CLIENT_SAFE_ATTRIBUTES,
+    where: { id_franqueado: targetId }
+  });
+
+  return res.json({ success: true, message: nmClientes });
 });
 
 //buscar lista de clientes
 router.post('/franqueado/clientes/list', async (req, res) => {
-  // console.log("kledisom", req.body.subpainel, typeof (req.query.subList), null, req.body.perfil)
+  const isAdmin = req.user && (req.user.autoridade === 1 || req.user.perfil === 'master');
+  // SEGURANÇA: Se não for admin, NUNCA confia em req.body.id ou req.body.perfil!
+  // Força estritamente o ID do usuário que consta no token JWT assinado criptograficamente.
+  const targetId = isAdmin ? (req.body.id || null) : req.user.id;
+
   if (req.body.subpainel && req.query.subList !== "null") {
     const nmClientes = await SubClientes.findAll({
-      where: { id_franqueado: req.body.id }
+      attributes: SUBCLIENT_SAFE_ATTRIBUTES,
+      where: { id_franqueado: targetId }
     });
 
-    return res.send(nmClientes);
-  } else if (req.body.perfil == "guest") {
-
-
-
+    return res.json({ success: true, message: nmClientes });
+  } else if (!isAdmin || targetId) {
+    // Parceiro comum OU Admin consultando um parceiro específico:
     const nmClientes = await Clientes.findAll({
+      attributes: CLIENT_SAFE_ATTRIBUTES,
       where: {
-        id_franqueado: req.body.id
+        id_franqueado: targetId
       },
+      include: [{
+        model: Sleeping,
+        required: false,
+        attributes: ['id', 'idVida', 'uuid']
+      }],
       order: [
-        // COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento) ASC
         [literal(`COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento)`), 'ASC'],
-
-        // CASE WHEN cpf_titular = 'titular' THEN 0 ELSE 1 END ASC
         [literal(`CASE WHEN cpf_titular = 'titular' THEN 0 ELSE 1 END`), 'ASC'],
-
-        // nu_documento ASC
         ['nu_documento', 'ASC']
       ]
     });
 
-
-
-    res.send(nmClientes)
+    return res.send(nmClientes);
   } else {
+    // Apenas Administrador Master sem filtro pode ver a base geral:
     const Cliente = await Clientes.findAll({
-      /*   where: {
-              nu_documento: '79082278057'
-          }, */
+      attributes: CLIENT_SAFE_ATTRIBUTES,
       include: [{
         model: Sleeping,
-        required: false // true = INNER JOIN / false = LEFT JOIN
+        required: false,
+        attributes: ['id', 'idVida', 'uuid']
       }]
     });
 
-    res.json(Cliente);
+    return res.json(Cliente);
   }
-
-
 });
 
 //atualizar franqueados
@@ -1552,56 +1870,61 @@ router.get('/franqueado/update/:id', async (req, res) => {
 
 //buscar cliente por id
 router.get('/buscar/cliente/:id', async (req, res) => {
-  console.log("line: 1116", req.params.id)
-
   if (!req.params.id) {
     res.json({ success: false, message: "erro no identificador" });
     return;
   }
 
+  const isAdmin = req.user && (req.user.autoridade === 1 || req.user.perfil === 'master');
+  const partnerWhere = isAdmin ? { id: req.params.id } : { id: req.params.id, id_franqueado: req.user.id };
 
   if (req.query.subpainel === "true") {
     const cliente = await SubClientes.findAll({
-      where: {
-        id: req.params.id
-      }
+      attributes: SUBCLIENT_SAFE_ATTRIBUTES,
+      where: partnerWhere
     });
 
+    if (!cliente || cliente.length === 0) {
+      return res.status(404).json({ success: false, message: "Cliente não encontrado ou sem permissão" });
+    }
+
     const dependentes = await SubClientes.findAll({
+      attributes: SUBCLIENT_SAFE_ATTRIBUTES,
       where: {
         cpf_titular: cliente[0].dataValues.nu_documento
       }
     });
-    //console.log(cliente[0].dataValues.nu_documento)
 
     res.json({ success: true, message: cliente, dependentes: dependentes })
   } else {
     const cliente = await Clientes.findAll({
-      where: {
-        id: req.params.id
-      }
+      attributes: CLIENT_SAFE_ATTRIBUTES,
+      where: partnerWhere
     });
 
-    console.log(req.query.subpainel, cliente)
+    if (!cliente || cliente.length === 0) {
+      return res.status(404).json({ success: false, message: "Cliente não encontrado ou sem permissão" });
+    }
 
     const dependentes = await Clientes.findAll({
+      attributes: CLIENT_SAFE_ATTRIBUTES,
       where: {
         cpf_titular: cliente[0].dataValues.nu_documento
       }
     });
-    //console.log(cliente[0].dataValues.nu_documento)
 
     res.json({ success: true, message: cliente, dependentes: dependentes })
   }
-
-  /* res.json(linkFranqueado[0].link) */
 });
 
 
 //buscar cliente por franqueado
 router.get('/clientes/list', async (req, res) => {
+  const isAdmin = req.user && (req.user.autoridade === 1 || req.user.perfil === 'master');
+  const whereClause = isAdmin ? { link: req.body.link } : { link: req.body.link, id_franqueado: req.user.id };
   const nmClientes = await Clientes.findAll({
-    where: { link: req.body.link }
+    attributes: CLIENT_SAFE_ATTRIBUTES,
+    where: whereClause
   });
 
   res.send(nmClientes)
@@ -1768,16 +2091,28 @@ router.put('/cliente/dependente', async (req, res) => {
 
 });
 
-//apagar franqueado
-router.delete('/franqueado/:id', async (req, res) => {
-  Franqueado.destroy({ where: { id: req.params.id } })
-  res.json('deletado');
+//apagar franqueado (exclusivo admin)
+router.delete('/franqueado/:id', adminAuth, async (req, res) => {
+  await Franqueado.destroy({ where: { id: req.params.id } });
+  res.json({ success: true, message: 'Franqueado excluído com sucesso.' });
 });
 
-//apagar cliente
+//apagar cliente (com validação de carteira)
 router.delete('/franqueado/cliente/:id', async (req, res) => {
-  Clientes.destroy({ where: { id: req.params.id } })
-  res.json('deletado');
+  const isAdmin = req.user && (req.user.autoridade === 1 || req.user.perfil === 'master');
+  const whereClause = { id: req.params.id };
+
+  // Se não for admin, só pode excluir cliente da sua própria carteira
+  if (!isAdmin) {
+    whereClause.id_franqueado = req.user.id;
+  }
+
+  const deleted = await Clientes.destroy({ where: whereClause });
+  if (deleted) {
+    res.json({ success: true, message: 'Cliente excluído com sucesso.' });
+  } else {
+    res.status(404).json({ success: false, message: 'Cliente não encontrado ou não pertence a este franqueado.' });
+  }
 });
 
 //rota de testes para mudar situação do cliente
@@ -2592,6 +2927,9 @@ router.get('/payment/reminder/1', paymentReminder.paymentReminder1);
 //SUBPAINEIS
 router.post('/subpainel/create', sub_franqueados.create);
 router.get('/subpainel/read/:id', sub_franqueados.read);
+router.put('/subpainel/update/:id', sub_franqueados.update);
+router.delete('/subpainel/delete/:id', sub_franqueados.delete);
+router.get('/subpainel/clientes/:id', sub_franqueados.getClientes);
 router.post('/subpainel/create/clientes', sub_franqueados.createClientes);
 router.post('/subpainel/import/clientes', upload.single('file'), sub_franqueados.importClientes);
 
@@ -2661,6 +2999,17 @@ router.get('/credentialsApi/:id', auth, credentialsApiController.show);
 router.post('/credentialsApi', auth, credentialsApiController.store);
 router.put('/credentialsApi/:id', auth, credentialsApiController.update);
 router.delete('/credentialsApi/:id', auth, credentialsApiController.destroy);
+
+// Inativação em Massa (Exclusivo Administrador)
+const massInactivationAdmin = require('../controllers/admin/massInactivationController');
+router.post('/admin/mass-inactivation/preview', adminAuth, massInactivationAdmin.preview);
+router.post('/admin/mass-inactivation/start', adminAuth, massInactivationAdmin.start);
+router.get('/admin/mass-inactivation/status', adminAuth, massInactivationAdmin.status);
+router.post('/admin/mass-inactivation/stop', adminAuth, massInactivationAdmin.stop);
+
+router.auth = auth;
+router.globalAuth = globalAuth;
+router.adminAuth = adminAuth;
 
 module.exports = router;
 

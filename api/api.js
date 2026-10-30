@@ -109,7 +109,7 @@ function auth(req, res, next) {
     }
 }); */
 
-routerApi.post('/auth', async(req, res) => {
+routerApi.post('/auth', async (req, res) => {
     try {
 
         var { api_key, secret_key } = req.body;
@@ -126,9 +126,9 @@ routerApi.post('/auth', async(req, res) => {
 
         console.log('api', api_key, credentialKey);
 
-        if(credentialKey.status != "ativo") {
-              res.json({ err: "Credenciais inválidas" });
-              return;
+        if (credentialKey.status != "ativo") {
+            res.json({ err: "Credenciais inválidas" });
+            return;
         }
 
         if (credentialKey != undefined) {
@@ -563,7 +563,7 @@ routerApi.get('/consulta/oimed/:cpf', auth, async (req, res) => {
 })
 
 ///ativação de dependentes
-routerApi.post('/ativacao/te', async (req, res) => {
+routerApi.post('/ativacao/te', auth, async (req, res) => {
     const { name,
         cpf,
         birthday,
@@ -933,9 +933,8 @@ routerApi.post('/oimed/specialty-availability', auth, async (req, res) => {
         res.json({ success: true, data: response.data });
         console.log("resposta disponibilidade: ", response.data)
     } catch (error) {
-        console.log(error)
-        res.status(500).json({ success: false, message: error });
-        //res.status(500).json({ success: false, message: error.response.data.message });
+        console.log(error.response.data.message)
+        res.status(500).json({ success: false, message: error.response.data.message });
     }
 
 })

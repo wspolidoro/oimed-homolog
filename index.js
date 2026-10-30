@@ -1,9 +1,68 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const port = process.env.PORT || 3035;
+
+// Segurança: Headers HTTP de proteção via Helmet
+app.use(helmet({
+  contentSecurityPolicy: false, // Mantém compatibilidade com formulários externos e embeds
+  crossOriginEmbedderPolicy: false
+}));
+
+// Segurança: Configuração de CORS com origens autorizadas
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:3035',
+  'https://parceiro.painelw.com.br',
+  'https://oimed.com.br',
+  'https://api.oimed.com.br'
+];
+const envOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+  : defaultOrigins;
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (envOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    return callback(new Error('Origem não permitida pela política CORS.'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'clientId', 'token', 'doc', 'key']
+}));
+
+// Segurança: Rate Limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 2000, // 2000 requisições por IP a cada 15 min
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Muitas requisições originadas deste IP. Tente novamente mais tarde." }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 25, // 25 tentativas de login por IP a cada 15 min
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Muitas tentativas de login consecutivas. Por segurança, tente novamente em 15 minutos." }
+});
+
+app.use('/api/', apiLimiter);
+app.use('/api/auth', authLimiter);
+app.use('/api/wp/auth', authLimiter);
+app.use('/api/wp/login', authLimiter);
+app.use('/api/login/consulta', authLimiter);
+
 const rout = require('./routs/Routes');
 const routerApi = require('./api/api');
 const routerSandbox = require('./api/sandbox');
@@ -11,26 +70,19 @@ const routerSandbox = require('./api/sandbox');
 const sendMailError = require('./routs/sendMailer.js');
 
 //docs
-const swaggerUi = require('swagger-ui-express')
+const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
 
 app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-app.use(cors());
-
 app.use(bodyParser.json());
-// Express modules / packages 
-
 app.use(bodyParser.urlencoded({ extended: true }));
-// Express modules / packages 
 
 // expose static assets so the login consulta page can load its JS/CSS
 const assetsDir = path.join(__dirname, 'parceiro.painelw.com.br/assets');
 app.use('/assets', express.static(assetsDir));
 const jsDir = path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir');
 app.use('/api/js', express.static(jsDir));
-
-
 
 app.use('/api/', rout);
 
@@ -72,8 +124,7 @@ app.use('/api/cadastro/oimed', express.static(novoSamirDir));
 const dormir = require('./functions/crud');
 const Sleeping = require('./schema/tb_sleeping');
 const Clientes = require('./schema/tb_clientes.js');
-require('dotenv').config();
-const iniciar = require('./functions/massInactivate/processar.js')
+const iniciar = require('./functions/massInactivate/processar.js');
 
 //CONTROLLES
 const { sleep, wakeUp } = require('./controllers/sleeping/index.js')
@@ -144,7 +195,7 @@ async function fallAsleep(cpf, uuid) {
 
 //wakeUp("3aa63d54-bdfc-44b8-b6b7-ad683ed12ded");
 
-app.put('/api/cliente/toggleSleeping/:uuid', async (req, res) => {
+app.put('/api/cliente/toggleSleeping/:uuid', rout.auth, async (req, res) => {
 	const id = req.params.uuid;
 
 	const isSleeping = await sleep(id);
@@ -152,11 +203,18 @@ app.put('/api/cliente/toggleSleeping/:uuid', async (req, res) => {
 	if (isSleeping) {
 		await wakeUp(isSleeping.uuid);
 		res.status(200).json({ success: true, message: "Operação realizada com sucesso!" });
+	} else {
+		res.status(200).json({ success: true, message: "Operação realizada com sucesso!" });
 	}
 });
 
-app.put('/api/parceiro/inativar/:idFranqueado', async (req, res) => {
+app.put('/api/parceiro/inativar/:idFranqueado', rout.auth, async (req, res) => {
 	const idFranqueado = req.params.idFranqueado;
+
+	// Apenas administradores podem inativar franqueados
+	if (req.user && req.user.autoridade !== 1 && req.user.perfil !== 'master') {
+		return res.status(403).json({ success: false, message: "Apenas administradores podem inativar parceiros." });
+	}
 
 	const inativar = await Franqueado.update({
 		status: 'inativo'
@@ -171,8 +229,13 @@ app.put('/api/parceiro/inativar/:idFranqueado', async (req, res) => {
 	res.status(200).json({ success: true, message: "Operação realizada com sucesso!" });
 });
 
-app.put('/api/parceiro/ativar/:idFranqueado', async (req, res) => {
+app.put('/api/parceiro/ativar/:idFranqueado', rout.auth, async (req, res) => {
 	const idFranqueado = req.params.idFranqueado;
+
+	// Apenas administradores podem ativar franqueados
+	if (req.user && req.user.autoridade !== 1 && req.user.perfil !== 'master') {
+		return res.status(403).json({ success: false, message: "Apenas administradores podem ativar parceiros." });
+	}
 
 	const ativar = await Franqueado.update({
 		status: 'ativo'
@@ -258,184 +321,106 @@ async function massInactivationPorParceiro(idFranqueado) {
 	}
 }
 
-const novadesativacao = require('./novadesativacao.json');
+const actionsTelemedicina = require('./controllers/telemedicinaActions/actions');
 
-const cpfs = novadesativacao
-	.filter(item => !['P', 'GP', 'GSP'].includes(item.serviceType))
-	.map(item => item.cpf);
-
-console.log("Total de CPFs para inativação:", cpfs.length);
-
-async function massInactivation() {
-	const exclusions = [
-		"01678689505",
-		"01758232005",
-		"03771876150",
-		"08358172532",
-		"68980167504",
-		"56548451104",
-		"03980104800",
-		"71091953171",
-		"31057270865",
-		"37917107884",
-		"07064809290",
-		"46849922840",
-		"70505370476",
-		"06025515522",
-		"89250818572",
-		"24700861835",
-		"05948974596",
-		"32978080809",
-		"09176170616",
-		"08292347305",
-		"09109198792",
-		"71028390572"
+async function massInactivation(customExclusions = null, batchSize = 15) {
+	const defaultExclusions = [
+		"07791966786", "71028390572", "10032206739", "20267231172",
+		"36352250025", "97514837515", "03791304240", "03980104800",
+		"37377795549", "37917107884", "78140617504", "02767225580",
+		"56548451104", "74685708253", "68980167504", "31057270865",
+		"03771876150"
 	];
 
-
-
-
-	const inclusions = cpfs;
-
-
-	const normalizedExclusions = new Set(exclusions.map(cpf => cpf.replace(/\D/g, '')));
+	const exclusions = customExclusions || defaultExclusions;
+	const normalizedExclusions = new Set(exclusions.map(cpf => String(cpf).replace(/\D/g, '')).filter(Boolean));
 	const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-	/*     const clientes = await Clientes.findAll({
+	try {
+		console.log("Buscando beneficiários via Rapidoc (listarBeneficiarios)...");
+		const rawBeneficiaries = await actionsTelemedicina.listarBeneficiarios();
+		const list = Array.isArray(rawBeneficiaries)
+			? rawBeneficiaries
+			: (rawBeneficiaries?.beneficiaries || rawBeneficiaries?.data || []);
+
+		const cpfsInclusions = list
+			.filter(item => item.cpf && !['P', 'GP', 'GSP'].includes(item.serviceType))
+			.map(item => item.cpf);
+
+		console.log("Total de CPFs elegíveis obtidos da Rapidoc:", cpfsInclusions.length);
+
+		if (cpfsInclusions.length === 0) {
+			console.log("Nenhum CPF elegível encontrado para inativação.");
+			return;
+		}
+
+		const clientes = await Clientes.findAll({
 			where: {
 				situacao: 'ativo',
-				nu_documento: { [Op.notIn]: exclusions }
+				nu_documento: {
+					[Op.in]: cpfsInclusions,
+					[Op.notIn]: Array.from(normalizedExclusions)
+				},
+				'$oi_sleeping.idVida$': { [Op.is]: null }
 			},
 			include: [{
 				model: Sleeping,
-				required: false
+				as: 'oi_sleeping',
+				required: false,
+				attributes: []
 			}],
 			raw: true,
-			attributes: ['nu_documento', 'uuid']
-		}); */
-
-
-	const clientes = await Clientes.findAll({
-		where: {
-			situacao: 'ativo',
-			nu_documento: {
-				[Op.in]: inclusions,
-				[Op.notIn]: exclusions
-			},
-			//nu_documento: { [Op.notIn]: exclusions },
-			// Use EXATAMENTE o nome que está no 'as' do include abaixo
-			'$oi_sleeping.idVida$': { [Op.is]: null }
-		},
-		include: [{
-			model: Sleeping,
-			as: 'oi_sleeping', // Definimos o apelido manualmente aqui
-			required: false,
-			attributes: []
-		}],
-		raw: true,
-		attributes: ['nu_documento', 'uuid'],
-		limit: 15
-	}).catch(error => {
-		console.error("Erro ao buscar clientes:", error.message || error);
-	});
-
-	for (const cliente of clientes) {
-		console.log(`Processando ${cliente.nu_documento}...`);
-		const cpfDigits = cliente.nu_documento ? cliente.nu_documento.replace(/\D/g, '') : '';
-
-		if (!cpfDigits || normalizedExclusions.has(cpfDigits)) {
-			console.log(`Ignorando ${cliente.nu_documento || 'registro sem CPF'} (exclusão ou CPF inválido)`);
-			await delay(5000);
-			continue;
-		}
-
-		const alreadySleeping = await Sleeping.findOne({
-			where: {
-				[Op.or]: [
-					{ idVida: cliente.nu_documento },
-					{ idVida: cpfDigits }
-				]
-			}
+			attributes: ['nu_documento', 'uuid'],
+			limit: batchSize
 		});
 
-		if (alreadySleeping) {
-			console.log(`Ignorando ${cliente.nu_documento} (já está na tabela sleeping)`);
-			await delay(5000);
-			continue;
+		if (!clientes || clientes.length === 0) {
+			console.log("Nenhum cliente elegível encontrado para inativação.");
+			return;
 		}
 
-		try {
-			console.log(`Inativando ${cliente.nu_documento}`);
-			await fallAsleep(cliente.nu_documento, cliente.uuid);
-		} catch (error) {
-			console.error(`Erro ao inativar ${cliente.nu_documento}:`, error.message || error);
-		}
+		console.log(`Processando lote de ${clientes.length} clientes...`);
 
-		await delay(5000);
+		for (const cliente of clientes) {
+			const cpfClean = cliente.nu_documento ? cliente.nu_documento.replace(/\D/g, '') : '';
+
+			if (!cpfClean || normalizedExclusions.has(cpfClean)) {
+				console.log(`Ignorando ${cliente.nu_documento || 'registro sem CPF'} (exclusão ou CPF inválido)`);
+				continue;
+			}
+
+			const alreadySleeping = await Sleeping.findOne({
+				where: {
+					[Op.or]: [
+						{ idVida: cliente.nu_documento },
+						{ idVida: cpfClean }
+					]
+				},
+				attributes: ['id']
+			});
+
+			if (alreadySleeping) {
+				console.log(`Ignorando ${cliente.nu_documento} (já está na tabela sleeping)`);
+				continue;
+			}
+
+			try {
+				console.log(`Inativando ${cliente.nu_documento}...`);
+				await fallAsleep(cliente.nu_documento, cliente.uuid);
+				await delay(5000);
+			} catch (error) {
+				console.error(`Erro ao inativar ${cliente.nu_documento}:`, error.message || error);
+				await delay(1500);
+			}
+		}
+		console.log("Lote finalizado com sucesso.");
+	} catch (err) {
+		console.error("Erro crítico em massInactivation:", err.message || err);
 	}
 }
 
 //massInactivation()
 
-//teste()
-
-async function teste() {
-	const clientes = await Clientes.findAll({
-		where: {
-			[Op.and]: [
-				{ situacao: 'ativo' },
-				{ id_franqueado: 76 }
-				//{ uuid: "" }
-			]
-			//situacao: 'ativo'
-		},
-		raw: true,
-		attributes: ['nu_documento', 'situacao', 'uuid'],
-		include: [{
-			model: Sleeping,
-			required: false // true = INNER JOIN / false = LEFT JOIN
-		}]
-	});
-
-	const result = clientes
-		.map(item1 => {
-			const found = arr2.find(item2 => item2.cpf === String(item1.nu_documento));
-			return found ? found.uuid : null;
-		})
-		.filter(Boolean);
-
-	console.log("very", result);
-
-	const cpfToUuidMap = new Map(
-		arr2.map(item => [item.cpf, item.uuid])
-	);
-
-	const updates = clientes
-		.filter(c => !c.uuid)
-		.map(async cliente => {
-			const uuid = cpfToUuidMap.get(String(cliente.nu_documento));
-			if (!uuid) return null;
-
-			await Clientes.update({
-				uuid: uuid
-			}, {
-				where: {
-					nu_documento: cliente.nu_documento
-				}
-			})
-
-			return {
-				nu_documento: cliente.nu_documento,
-				uuid
-			};
-		})
-		.filter(Boolean);
-
-	if (updates.length) {
-		console.log(updates)
-	}
-
-}
 
 
 
@@ -579,4 +564,4 @@ const tiposRemover = ['P', 'GP', 'GSP'];
 
 
 
-console.log("Data loaded successfully.", novadesativacao.length);
+// console.log("Data loaded successfully.");

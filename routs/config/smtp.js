@@ -10,15 +10,14 @@
 }; */
 
 module.exports = {
-    host: "mail.painelw.com.br", // Substitua pelo seu host do cPanel
-    port: 465,
-    secure: true, // true para porta 465
+    host: process.env.SMTP_HOST || "mail.painelw.com.br",
+    port: Number(process.env.SMTP_PORT) || 465,
+    secure: true,
     auth: {
-        user: "noreply@painelw.com.br", // Seu e-mail completo
-        pass: "H8GR3?ii=?opFd*="        // A senha que você criou no cPanel
+        user: process.env.SMTP_USER || "noreply@painelw.com.br",
+        pass: process.env.SMTP_PASS || "H8GR3?ii=?opFd*="
     },
     tls: {
-        // Isso ajuda se o seu certificado SSL for auto-assinado ou tiver problemas de cadeia
         rejectUnauthorized: false 
     }
 };

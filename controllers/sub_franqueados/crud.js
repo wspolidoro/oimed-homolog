@@ -107,14 +107,103 @@ module.exports = {
 
   },
   read: async (req, res) => {
-    const listSubFranqueado = await SubFranqueado.findAll({
-      where: {
-        idFranqueadoMaster: req.params.id
+    try {
+      const listSubFranqueado = await SubFranqueado.findAll({
+        where: {
+          idFranqueadoMaster: req.params.id
+        },
+        order: [['id', 'DESC']]
+      });
+
+      // Calcular o total de clientes reais para cada sub-franqueado
+      const subFranqueadosComContagem = await Promise.all(
+        listSubFranqueado.map(async (sub) => {
+          const totalVidas = await SubClientes.count({
+            where: { id_franqueado: sub.id }
+          }).catch(() => 0);
+
+          const totalAtivos = await SubClientes.count({
+            where: { id_franqueado: sub.id, situacao: 'ativo' }
+          }).catch(() => 0);
+
+          const data = sub.toJSON();
+          data.total_vidas = totalVidas;
+          data.total_ativos = totalAtivos;
+          return data;
+        })
+      );
+
+      res.json(subFranqueadosComContagem);
+    } catch (err) {
+      console.error("Erro ao listar subfranqueados:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  update: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { nome, cpf, telefone, email, status } = req.body;
+
+      const sub = await SubFranqueado.findByPk(id);
+      if (!sub) {
+        return res.status(404).json({ success: false, message: 'Sub-painel não encontrado.' });
       }
-    });
 
-    res.json(listSubFranqueado);
+      await sub.update({
+        nome: nome !== undefined ? nome : sub.nome,
+        cpf: cpf !== undefined ? String(cpf).replace(/\D/g, '') : sub.cpf,
+        telefone: telefone !== undefined ? telefone : sub.telefone,
+        email: email !== undefined ? email : sub.email,
+        status: status !== undefined ? status : sub.status
+      });
 
+      res.json({ success: true, message: 'Sub-painel atualizado com sucesso.', data: sub });
+    } catch (err) {
+      console.error("Erro ao atualizar subfranqueado:", err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  delete: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const sub = await SubFranqueado.findByPk(id);
+      if (!sub) {
+        return res.status(404).json({ success: false, message: 'Sub-painel não encontrado.' });
+      }
+
+      await sub.destroy();
+      res.json({ success: true, message: 'Sub-painel excluído com sucesso.' });
+    } catch (err) {
+      console.error("Erro ao excluir subfranqueado:", err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  getClientes: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const clientes = await SubClientes.findAll({
+        where: { id_franqueado: id },
+        order: [['id', 'DESC']]
+      });
+
+      const total = clientes.length;
+      const ativos = clientes.filter(c => c.situacao === 'ativo').length;
+      const inativos = total - ativos;
+
+      res.json({
+        success: true,
+        total,
+        ativos,
+        inativos,
+        clientes
+      });
+    } catch (err) {
+      console.error("Erro ao buscar clientes do subfranqueado:", err);
+      res.status(500).json({ success: false, message: err.message });
+    }
   },
   importClientes: async (req, res) => {
     if (!req.file) {

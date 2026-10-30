@@ -486,7 +486,7 @@ routerSandbox.get('/consulta/oimed/:cpf', auth, async (req, res) => {
 })
 
 ///ativação de dependentes
-routerSandbox.post('/ativacao/te', async (req, res) => {
+routerSandbox.post('/ativacao/te', auth, async (req, res) => {
     const { name,
         cpf,
         birthday,

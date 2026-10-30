@@ -278,5 +278,35 @@ module.exports = {
     //console.log(err)
   }
 
+    },
+
+    listarBeneficiarios: async (req, res) => {
+        try {
+            const response = await axios.get('https://api.rapidoc.tech/tema/api/beneficiaries', {
+                headers: {
+                    'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
+                    'User-Agent': 'insomnia/11.4.0',
+                    'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32'
+                },
+                params: req && req.query ? req.query : undefined
+            });
+
+            console.log("Rapidoc beneficiaries response status:", response.status);
+
+            if (res && typeof res.json === 'function') {
+                return res.status(response.status).json(response.data);
+            }
+            return response.data;
+        } catch (err) {
+            console.error("Erro ao buscar beneficiários na Rapidoc:", err.response ? err.response.data : err.message);
+            if (res && typeof res.status === 'function') {
+                return res.status(err.response ? err.response.status : 500).json(err.response ? err.response.data : { error: err.message });
+            }
+            throw err;
+        }
+    },
+
+    getBeneficiaries: async (req, res) => {
+        return module.exports.listarBeneficiarios(req, res);
     }
 }

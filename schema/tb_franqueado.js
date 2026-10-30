@@ -209,6 +209,12 @@ const Franqueado = sequelize.define('oi_franqueado', {
         type: Sequelize.INTEGER,
         allowNull: false,
         unique: false
+    },
+
+    customizacao: {
+        type: Sequelize.TEXT('long'),
+        allowNull: true,
+        unique: false
     }
 
 });

@@ -1,2 +1,96 @@
-node_modules
+# ==============================================================================
+# DEPENDÊNCIAS
+# ==============================================================================
+node_modules/
+jspm_packages/
+.pnpm-store/
+
+# ==============================================================================
+# VARIÁVEIS DE AMBIENTE & SEGREDOS / CREDENCIAIS
+# ==============================================================================
 .env
+.env.*
+*.env
+!*.env.example
+!*.env.sample
+
+# Arquivos locais com credenciais/senhas em texto plano
+routs/config/acesso.txt
+*acesso*.txt
+credentials.json
+*secret*
+*token*.json
+
+# ==============================================================================
+# LOGS E ARQUIVOS DE DEBUG
+# ==============================================================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ==============================================================================
+# DADOS TEMPORÁRIOS, FILAS E PROCESSAMENTOS EM MASSA (LGPD / PRIVACIDADE)
+# ==============================================================================
+progresso.json
+erros.json
+mass.json
+novadesativacao.json
+functions/massInactivate/progresso.json
+functions/massInactivate/errors.json
+
+# Diretórios de upload e arquivos temporários de clientes
+uploads/*
+!uploads/.gitkeep
+!uploads/temp/.gitkeep
+temp/
+tmp/
+
+# ==============================================================================
+# ARQUIVOS COMPACTADOS, BACKUPS E CÓPIAS
+# ==============================================================================
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*.bak
+*.backup
+*.old
+
+# ==============================================================================
+# ARQUIVOS DO SISTEMA OPERACIONAL (macOS & Windows)
+# ==============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# ==============================================================================
+# ARQUIVOS DE CONFIGURAÇÃO DE IDEs E EDITORES
+# ==============================================================================
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# ==============================================================================
+# TESTES E COBERTURA DE CÓDIGO
+# ==============================================================================
+coverage/
+.nyc_output/
