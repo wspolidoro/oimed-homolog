@@ -65,10 +65,16 @@ const authLimiter = rateLimit({
 });
 
 app.use('/api/', apiLimiter);
+app.use('/', apiLimiter);
+
 app.use('/api/auth', authLimiter);
+app.use('/auth', authLimiter);
 app.use('/api/wp/auth', authLimiter);
+app.use('/wp/auth', authLimiter);
 app.use('/api/wp/login', authLimiter);
+app.use('/wp/login', authLimiter);
 app.use('/api/login/consulta', authLimiter);
+app.use('/login/consulta', authLimiter);
 
 const rout = require('./routs/Routes');
 const routerApi = require('./api/api');
@@ -91,7 +97,9 @@ app.use('/assets', express.static(assetsDir));
 const jsDir = path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir');
 app.use('/api/js', express.static(jsDir));
 
+// Monta rotas principais em /api e também em / (caso o Passenger do cPanel faça strip de /api)
 app.use('/api/', rout);
+app.use('/', rout);
 
 app.get('/mailerr', async (req, res) => {
 
@@ -103,13 +111,10 @@ app.get('/mailerr', async (req, res) => {
 
 });
 
-
-
-/* app.use('/api', routerApi);
-app.use('/sandbox', routerSandbox); */
-
 app.use('/api/production', routerApi);
+app.use('/production', routerApi);
 app.use('/api/sandbox', routerSandbox);
+app.use('/sandbox', routerSandbox);
 
 
 app.get('/login-consulta', (req, res) => {
