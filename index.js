@@ -214,18 +214,96 @@ async function fallAsleep(cpf, uuid) {
 
 //wakeUp("3aa63d54-bdfc-44b8-b6b7-ad683ed12ded");
 
-app.put('/api/cliente/toggleSleeping/:uuid', rout.auth, async (req, res) => {
-	const id = req.params.uuid;
+const toggleSleepingHandler = async (req, res) => {
+	try {
+		const docOrUuid = req.params.uuid;
+		const cleanDoc = String(docOrUuid).replace(/\D/g, '');
 
-	const isSleeping = await sleep(id);
+		// Verifica se o beneficiário já consta na tabela Sleeping
+		const isSleeping = await Sleeping.findOne({
+			where: {
+				[Op.or]: [
+					{ idVida: cleanDoc },
+					{ idVida: docOrUuid },
+					{ uuid: docOrUuid }
+				]
+			}
+		});
 
-	if (isSleeping) {
-		await wakeUp(isSleeping.uuid);
-		res.status(200).json({ success: true, message: "Operação realizada com sucesso!" });
-	} else {
-		res.status(200).json({ success: true, message: "Operação realizada com sucesso!" });
+		if (isSleeping) {
+			// Está em Sleeping -> DESPERTAR (Reativar na Telemedicina e remover da tabela Sleeping)
+			const targetUuid = isSleeping.uuid || docOrUuid;
+			try {
+				if (targetUuid && targetUuid.includes('-')) {
+					await dormir.update(targetUuid);
+				}
+			} catch (apiErr) {
+				console.warn("Aviso ao reativar beneficiário na Rapidoc:", apiErr.message);
+			}
+
+			await Sleeping.destroy({
+				where: {
+					[Op.or]: [
+						{ idVida: cleanDoc },
+						{ idVida: docOrUuid },
+						{ uuid: targetUuid }
+					]
+				}
+			});
+
+			return res.status(200).json({ 
+				success: true, 
+				action: 'wakeup', 
+				message: "Beneficiário despertado do Sleeping com sucesso!" 
+			});
+		} else {
+			// Não está em Sleeping -> COLOCAR EM SLEEPING (Inativar na Telemedicina e registrar em Sleeping)
+			const cliente = await Clientes.findOne({
+				where: {
+					[Op.or]: [
+						{ nu_documento: cleanDoc },
+						{ nu_documento: docOrUuid }
+					]
+				}
+			});
+
+			let beneficiaryUuid = cliente?.uuid || null;
+
+			try {
+				const resultado = await dormir.delete(cleanDoc);
+				if (resultado && resultado.beneficiary && resultado.beneficiary.uuid) {
+					beneficiaryUuid = resultado.beneficiary.uuid;
+				}
+			} catch (apiErr) {
+				console.warn("Aviso ao inativar na telemedicina:", apiErr.message);
+			}
+
+			if (beneficiaryUuid && cliente && !cliente.uuid) {
+				await Clientes.update({ uuid: beneficiaryUuid }, { where: { id: cliente.id } }).catch(() => {});
+			}
+
+			await Sleeping.findOrCreate({
+				where: { idVida: cleanDoc },
+				defaults: {
+					idVida: cleanDoc,
+					uuid: beneficiaryUuid || 'sleeping_' + Date.now()
+				}
+			});
+
+			return res.status(200).json({ 
+				success: true, 
+				action: 'sleep', 
+				message: "Beneficiário colocado em modo Sleeping com sucesso!" 
+			});
+		}
+	} catch (err) {
+		console.error("Erro no toggleSleeping:", err);
+		return res.status(500).json({ success: false, message: "Erro ao alternar modo Sleeping: " + err.message });
 	}
-});
+};
+
+app.put('/api/cliente/toggleSleeping/:uuid', rout.auth, toggleSleepingHandler);
+app.put('/cliente/toggleSleeping/:uuid', rout.auth, toggleSleepingHandler);
 
 app.put('/api/parceiro/inativar/:idFranqueado', rout.auth, async (req, res) => {
 	const idFranqueado = req.params.idFranqueado;

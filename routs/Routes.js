@@ -26,6 +26,7 @@ const SubClientes = require('../schema/tb_sub_clientes.js');
 const Planos = require('../schema/tb_planos.js');
 const { relacPlanos } = require('../schema/index.js');
 const Sleeping = require('../schema/tb_sleeping');
+const dormir = require('../functions/crud');
 
 //controllers
 const cadastroNewForm = require('../controllers/cadastroClientes/cadastroNewForm');
@@ -2058,6 +2059,92 @@ router.post('/franqueado/clientes/list', async (req, res) => {
 router.get('/franqueado/update/:id', async (req, res) => {
   Franqueado.destroy({ where: { id: req.params.id } })
   res.json('deletado');
+});
+
+// Alternar modo Sleeping (colocar em hibernação ou despertar)
+router.put('/cliente/toggleSleeping/:uuid', async (req, res) => {
+  try {
+    const docOrUuid = req.params.uuid;
+    const cleanDoc = String(docOrUuid).replace(/\D/g, '');
+
+    const isSleeping = await Sleeping.findOne({
+      where: {
+        [Op.or]: [
+          { idVida: cleanDoc },
+          { idVida: docOrUuid },
+          { uuid: docOrUuid }
+        ]
+      }
+    });
+
+    if (isSleeping) {
+      const targetUuid = isSleeping.uuid || docOrUuid;
+      try {
+        if (targetUuid && targetUuid.includes('-')) {
+          await dormir.update(targetUuid);
+        }
+      } catch (apiErr) {
+        console.warn("Aviso ao reativar beneficiário na Rapidoc:", apiErr.message);
+      }
+
+      await Sleeping.destroy({
+        where: {
+          [Op.or]: [
+            { idVida: cleanDoc },
+            { idVida: docOrUuid },
+            { uuid: targetUuid }
+          ]
+        }
+      });
+
+      return res.status(200).json({ 
+        success: true, 
+        action: 'wakeup', 
+        message: "Beneficiário despertado do Sleeping com sucesso!" 
+      });
+    } else {
+      const cliente = await Clientes.findOne({
+        where: {
+          [Op.or]: [
+            { nu_documento: cleanDoc },
+            { nu_documento: docOrUuid }
+          ]
+        }
+      });
+
+      let beneficiaryUuid = cliente?.uuid || null;
+
+      try {
+        const resultado = await dormir.delete(cleanDoc);
+        if (resultado && resultado.beneficiary && resultado.beneficiary.uuid) {
+          beneficiaryUuid = resultado.beneficiary.uuid;
+        }
+      } catch (apiErr) {
+        console.warn("Aviso ao inativar na telemedicina:", apiErr.message);
+      }
+
+      if (beneficiaryUuid && cliente && !cliente.uuid) {
+        await Clientes.update({ uuid: beneficiaryUuid }, { where: { id: cliente.id } }).catch(() => {});
+      }
+
+      await Sleeping.findOrCreate({
+        where: { idVida: cleanDoc },
+        defaults: {
+          idVida: cleanDoc,
+          uuid: beneficiaryUuid || 'sleeping_' + Date.now()
+        }
+      });
+
+      return res.status(200).json({ 
+        success: true, 
+        action: 'sleep', 
+        message: "Beneficiário colocado em modo Sleeping com sucesso!" 
+      });
+    }
+  } catch (err) {
+    console.error("Erro no toggleSleeping:", err);
+    return res.status(500).json({ success: false, message: "Erro ao alternar modo Sleeping: " + err.message });
+  }
 });
 
 
