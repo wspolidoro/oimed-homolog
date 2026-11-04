@@ -24,82 +24,102 @@ routerSandbox.use(function timelog(req, res, next) {
     next();
 });
 
-function auth(req, res, next) {
-    const authToken = req.headers['authorization'];
+async function auth(req, res, next) {
+    const authToken = req.headers['authorization'] || req.headers['Authorization'] || req.headers['x-access-token'];
 
-    if (authToken != undefined) {
+    if (authToken) {
+        let token = authToken;
+        if (typeof authToken === 'string' && authToken.includes(' ')) {
+            const parts = authToken.split(' ');
+            token = parts[1] || parts[0];
+        }
 
-        const bearer = authToken.split(' ');
-        let token = bearer[1];
-
-        jwt.verify(token, secretKey, (err, data) => {
+        return jwt.verify(token, secretKey, (err, data) => {
             if (err) {
-                res.status(401);
-                res.json({ success: false, message: "Token inválido" });
-            } else {
-                req.token = token;
-                req.user = { id: data.id, nome: data.nome };
-
-                next();
+                return res.status(401).json({ success: false, message: "Token inválido ou expirado" });
             }
+            req.token = token;
+            req.user = { id: data.id, nome: data.nome || data.user };
+            return next();
         });
-
-    } else {
-        res.status(401);
-        res.json({ success: false, message: "Token Inválido" });
     }
 
-};
+    // Suporte direto via headers de API Key (x-api-key e x-secret-key ou clientid e clientsecret)
+    const apiKey = req.headers['x-api-key'] || req.headers['api_key'] || req.headers['clientid'] || req.headers['client_id'];
+    const secretKeyHeader = req.headers['x-secret-key'] || req.headers['secret_key'] || req.headers['clientsecret'] || req.headers['client_secret'];
 
-const credentials = [
-    {
-        id: 12,
-        nome: "jose",
-        api_key: "keytest33",
-        secret_key: "secrettest33"
-    }
-]
-
-routerSandbox.post('/auth', async (req, res) => {
-    var { api_key, secret_key } = req.body;
-    //let credentialKey = credentials.find(i => i.api_key == api_key);
-
-    let credentialKey = await CredentialsApi.findOne({
-        attributes: ['id', 'nome', 'modo', 'api_key', 'secret_key', 'status'],
-        where: {
-            modo: 'sandbox',
-            api_key: api_key
-        },
-        raw: true
-    });
-
-    if (credentialKey != undefined) {
-        if (credentialKey.secret_key == secret_key) {
-
-            jwt.sign({ id: credentialKey.id, user: credentialKey.nome }, secretKey, { expiresIn: '1h' }, (err, token) => {
-                if (err) {
-                    res.status(400);
-                    res.json({ err: "falha interna" });
-                } else {
-                    if (req.query.login == "true") {
-                        res.json({ queryParam: "chave", token: token });
-                    } else {
-                        res.status(200);
-                        res.json({ token: token });
-                    }
-                }
+    if (apiKey && secretKeyHeader) {
+        try {
+            const cred = await CredentialsApi.findOne({
+                where: {
+                    [Op.or]: [{ modo: 'sandbox' }, { modo: 'desenvolvimento' }, { modo: 'dev' }],
+                    api_key: apiKey,
+                    secret_key: secretKeyHeader,
+                    status: 'ativo'
+                },
+                raw: true
             });
 
-        } else {
-            res.status(401);
-            res.json({ err: "Credenciais inválidas" });
+            if (cred) {
+                req.user = { id: cred.id, nome: cred.nome };
+                return next();
+            }
+        } catch (e) {
+            console.error("Erro na autenticação por API Key em header (sandbox):", e);
         }
-    } else {
-        res.status(404);
-        res.json({ err: "os dados enviados não existe" });
     }
 
+    return res.status(401).json({ success: false, message: "Token ou credenciais de API não fornecidas" });
+};
 
+routerSandbox.post('/auth', async (req, res) => {
+    try {
+        const { api_key, secret_key, apiKey, secretKey: secretKeyBody } = req.body || {};
+        const key = api_key || apiKey;
+        const secret = secret_key || secretKeyBody;
+
+        if (!key || !secret) {
+            return res.status(400).json({ success: false, err: "api_key e secret_key são obrigatórios" });
+        }
+
+        const credentialKey = await CredentialsApi.findOne({
+            attributes: ['id', 'nome', 'modo', 'api_key', 'secret_key', 'status'],
+            where: {
+                [Op.or]: [{ modo: 'sandbox' }, { modo: 'desenvolvimento' }, { modo: 'dev' }],
+                api_key: key
+            },
+            raw: true
+        });
+
+        console.log('[API Sandbox] Autenticação API Key:', key, credentialKey ? 'Encontrada' : 'Não encontrada');
+
+        if (!credentialKey) {
+            return res.status(404).json({ success: false, err: "Credenciais não encontradas" });
+        }
+
+        if (credentialKey.status !== "ativo") {
+            return res.status(401).json({ success: false, err: "Credenciais inativas" });
+        }
+
+        if (credentialKey.secret_key === secret) {
+            jwt.sign({ id: credentialKey.id, user: credentialKey.nome }, secretKey, { expiresIn: '8h' }, (err, token) => {
+                if (err) {
+                    console.error("Erro ao gerar token JWT na Sandbox:", err);
+                    return res.status(500).json({ success: false, err: "falha interna" });
+                }
+                if (req.query.login == "true") {
+                    return res.status(200).json({ success: true, queryParam: "chave", token: token });
+                }
+                return res.status(200).json({ success: true, token: token });
+            });
+        } else {
+            return res.status(401).json({ success: false, err: "Credenciais inválidas" });
+        }
+
+    } catch (err) {
+        console.error("Erro interno na autenticação da Sandbox:", err);
+        return res.status(500).json({ success: false, err: "falha interna" });
+    }
 });
 
 /*--------implementação rapidoc------------*/

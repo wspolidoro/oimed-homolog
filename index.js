@@ -86,8 +86,6 @@ const sendMailError = require('./routs/sendMailer.js');
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./swagger.json');
 
-app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -97,25 +95,23 @@ app.use('/assets', express.static(assetsDir));
 const jsDir = path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir');
 app.use('/api/js', express.static(jsDir));
 
-// Monta rotas principais em /api e também em / (caso o Passenger do cPanel faça strip de /api)
-app.use('/api/', rout);
-app.use('/', rout);
+// Documentação Swagger da API
+app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/mailerr', async (req, res) => {
-
 	let sending = await sendMailError(req.query.id, "Vida não cadastrada na RD");
 	if (sending) {
 		res.json({ success: true, message: "Email enviado!" })
 	}
-
-
 });
 
+// APIs de integração externa de parceiros (Produção e Sandbox)
+// Montadas com prioridade antes do router geral para que não sejam interceptadas pela autenticação do painel
 app.use('/api/production', routerApi);
 app.use('/production', routerApi);
 app.use('/api/sandbox', routerSandbox);
 app.use('/sandbox', routerSandbox);
-
 
 app.get('/login-consulta', (req, res) => {
 	res.sendFile(path.join(__dirname, 'parceiro.painelw.com.br/views/login-consulta/index.html'));
@@ -124,14 +120,25 @@ app.get('/login-consulta', (req, res) => {
 app.get('/api/cadastro/oimed', (req, res) => {
 	res.sendFile(path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir/index.html'));
 });
+app.get('/cadastro/oimed', (req, res) => {
+	res.sendFile(path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir/index.html'));
+});
 
 app.get('/api/thankyou', (req, res) => {
+	res.sendFile(path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir/thank-you.html'));
+});
+app.get('/thankyou', (req, res) => {
 	res.sendFile(path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir/thank-you.html'));
 });
 
 // serve the novo-samir form folder so its JS/CSS are delivered with the right MIME types
 const novoSamirDir = path.join(__dirname, 'parceiro.painelw.com.br/views/formCadastroExterno/projeto-novo-samir');
 app.use('/api/cadastro/oimed', express.static(novoSamirDir));
+app.use('/cadastro/oimed', express.static(novoSamirDir));
+
+// Monta rotas principais do painel em /api e também em / (caso o Passenger do cPanel faça strip de /api)
+app.use('/api/', rout);
+app.use('/', rout);
 
 const dormir = require('./functions/crud');
 const Sleeping = require('./schema/tb_sleeping');

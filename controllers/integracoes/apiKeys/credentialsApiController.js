@@ -17,7 +17,7 @@ exports.index = async (req, res) => {
       const isProd = d.modo === 'producao';
       return {
         ...d,
-        api_url: isProd ? 'https://parceiro.painelw.com.br/api' : 'https://sandbox.painelw.com.br/api',
+        api_url: isProd ? 'https://parceiro.painelw.com.br/api/production' : 'https://parceiro.painelw.com.br/api/sandbox',
         clientId: d.api_key,
         client_id: d.api_key,
         clientSecret: d.secret_key,
@@ -69,7 +69,7 @@ exports.store = async (req, res) => {
     const isProd = d.modo === 'producao';
     const responsePayload = {
       ...d,
-      api_url: isProd ? 'https://parceiro.painelw.com.br/api' : 'https://sandbox.painelw.com.br/api',
+      api_url: isProd ? 'https://parceiro.painelw.com.br/api/production' : 'https://parceiro.painelw.com.br/api/sandbox',
       clientId: d.api_key,
       client_id: d.api_key,
       clientSecret: d.secret_key,
@@ -93,7 +93,7 @@ exports.show = async (req, res) => {
     const isProd = d.modo === 'producao';
     res.json({
       ...d,
-      api_url: isProd ? 'https://parceiro.painelw.com.br/api' : 'https://sandbox.painelw.com.br/api',
+      api_url: isProd ? 'https://parceiro.painelw.com.br/api/production' : 'https://parceiro.painelw.com.br/api/sandbox',
       clientId: d.api_key,
       client_id: d.api_key,
       clientSecret: d.secret_key,

@@ -88,6 +88,20 @@ function isPublicRoute(req) {
   // Healthcheck raiz
   if (method === 'GET' && (path === '/' || path === '/newFeat')) return true;
 
+  // APIs externas de integração de parceiros (production / sandbox) e Swagger
+  // Possuem autenticação própria baseada em API Key / JWT da integração
+  if (
+    path.startsWith('/production') ||
+    path.startsWith('/sandbox') ||
+    path.startsWith('/api-docs') ||
+    path.startsWith('/cadastro/oimed') ||
+    path === '/login-consulta' ||
+    path === '/thankyou' ||
+    path === '/mailerr'
+  ) {
+    return true;
+  }
+
   // Endpoints públicos de login e autenticação
   if (method === 'POST') {
     if (path === '/auth' || path === '/wp/auth' || path === '/wp/login' || path === '/login/consulta') {
@@ -176,17 +190,46 @@ router.post('/wp/clientes/newform', cadastroNewFormFromWoo.cadastrarVida);
 
 
 router.post('/auth', async (req, res) => {
-  var { email, password } = req.body;
+  const { api_key, secret_key, apiKey, secretKey: secretKeyBody, email, password } = req.body || {};
+  const resolvedApiKey = api_key || apiKey;
+  const resolvedSecretKey = secret_key || secretKeyBody;
+
+  // Se forem fornecidas credenciais de API (api_key e secret_key), autentica como parceiro/integração
+  if (resolvedApiKey && resolvedSecretKey) {
+    try {
+      const CredentialsApi = require('../schema/tb_credentialsApi');
+      const credentialKey = await CredentialsApi.findOne({
+        where: {
+          api_key: resolvedApiKey,
+          secret_key: resolvedSecretKey,
+          status: 'ativo'
+        },
+        raw: true
+      });
+
+      if (!credentialKey) {
+        return res.status(401).json({ success: false, message: "Credenciais de API inválidas ou inativas." });
+      }
+
+      const apiSecret = "@rfxzsklc_s+bg7t+@f6^obve=f!swr1%0838lctalor92vi";
+      const token = jwt.sign({ id: credentialKey.id, user: credentialKey.nome }, apiSecret, { expiresIn: '8h' });
+      return res.json({ success: true, token, modo: credentialKey.modo });
+    } catch (errApi) {
+      console.error("Erro na autenticação por API key em /auth:", errApi);
+      return res.status(500).json({ success: false, message: "Erro interno na autenticação da API." });
+    }
+  }
+
   if (!email || !password) {
     return res.status(400).json({ success: false, message: "E-mail e senha são obrigatórios." });
   }
 
-  email = String(email).trim().toLowerCase();
-  password = String(password).trim();
+  const cleanEmail = String(email).trim().toLowerCase();
+  const cleanPassword = String(password).trim();
 
   try {
     const user = await Franqueado.findOne({
-      where: { email: email }
+      where: { email: cleanEmail }
     });
 
     if (!user) {
