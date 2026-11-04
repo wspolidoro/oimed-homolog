@@ -130,7 +130,7 @@ async function auth(req, res, next) {
     }
 }); */
 
-routerApi.post('/auth', async (req, res) => {
+routerApi.post(['/auth', '/auth*'], async (req, res) => {
     try {
         const { api_key, secret_key, apiKey, secretKey: secretKeyBody } = req.body || {};
         const key = api_key || apiKey;

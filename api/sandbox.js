@@ -72,7 +72,7 @@ async function auth(req, res, next) {
     return res.status(401).json({ success: false, message: "Token ou credenciais de API não fornecidas" });
 };
 
-routerSandbox.post('/auth', async (req, res) => {
+routerSandbox.post(['/auth', '/auth*'], async (req, res) => {
     try {
         const { api_key, secret_key, apiKey, secretKey: secretKeyBody } = req.body || {};
         const key = api_key || apiKey;

@@ -26,12 +26,12 @@
         }
     },
     "paths": {
-        "/auth?login={login}": {
+        "/auth": {
             "post": {
                 "tags": [
                     "Autenticação"
                 ],
-                "summary": "Rota para obter token de acesso, Atenção! para obter token de login adicione o valor true a queryParam Login",
+                "summary": "Rota para obter token de acesso. Para obter token de login, adicione o valor true à queryParam login",
                 "requestBody": {
                     "content": {
                         "application/json": {
@@ -57,15 +57,14 @@
                 },
                 "parameters": [
                     {
-                        "in": "path",
+                        "in": "query",
                         "name": "login",
-                        "type": "boolean",
-                        "required": true,
+                        "required": false,
                         "schema": {
-                            "type": "string",
-                            "description": "obter token de login",
+                            "type": "boolean",
                             "default": false
-                        }
+                        },
+                        "description": "Obter token de login"
                     }
                 ],
                 "responses": {
