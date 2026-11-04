@@ -5,11 +5,20 @@ const Franqueado = require('../../schema/tb_franqueado.js');
 const { sendMailError, mailerNewCadastro } = require('../../routs/sendMailer.js');
 
 function serviceVerification(serviceType) {
-    if (serviceType === 'GS' || serviceType === 'GSP') {
+    if (!serviceType) return 'G';
+    const st = String(serviceType).toUpperCase().trim();
+    if (st === 'GS' || st === 'GSP') {
         return 'G';
     } else {
-        return serviceType;
+        return st || 'G';
     }
+}
+
+function paymentVerification(paymentType) {
+    if (!paymentType) return 'S';
+    const pt = String(paymentType).toUpperCase().trim();
+    if (pt === 'A') return 'A';
+    return 'S';
 }
 
 async function ativarBeneficiarioSubpainel(cpf, body) {
@@ -104,7 +113,7 @@ async function ativarBeneficiarioSubpainel(cpf, body) {
             "address": "rua do teste, 01",
             "city": cliente[0].city,
             "state": cliente[0].state && cliente[0].state.length <= 2 ? cliente[0].state : (cliente[0].state ? cliente[0].state.substr(cliente[0].state.length - 3, 2) : ''),
-            "paymentType": cliente[0].paymentType,
+            "paymentType": paymentVerification(cliente[0].paymentType),
             "serviceType": serviceVerification(cliente[0].serviceType),
             "holder": cliente[0].cpf_titular === 'titular' ? "" : cliente[0].cpf_titular,
             "general": cliente[0].id_franqueado
@@ -135,10 +144,14 @@ async function ativarBeneficiarioSubpainel(cpf, body) {
                 "address": dataArr[0].address1,
                 "city": dataArr[0].city1,
                 "state": dataArr[0].state1 && dataArr[0].state1.length <= 2 ? dataArr[0].state1 : (dataArr[0].state1 ? dataArr[0].state1.substr(dataArr[0].state1.length - 3, 2) : ''),
-                "holder": cliente[0].nu_documento
+                "holder": cliente[0].nu_documento,
+                "paymentType": paymentVerification(cliente[0].paymentType),
+                "serviceType": serviceVerification(cliente[0].serviceType),
+                "general": cliente[0].id_franqueado
             };
             arrBD.push(dep1);
-        } else if (dataArr[1] && dataArr[1].nu_documento2 != null) {
+        }
+        if (dataArr[1] && dataArr[1].nu_documento2 != null) {
             const data = dataArr[1].birthday1 ? dataArr[1].birthday1.split('/') : null;
             const birthdayFormat2 = data ? data : null;
 
@@ -152,10 +165,14 @@ async function ativarBeneficiarioSubpainel(cpf, body) {
                 "address": dataArr[1].address2,
                 "city": dataArr[1].city2,
                 "state": dataArr[0] && dataArr[0].state2 && dataArr[0].state2.length <= 2 ? dataArr[0].state2 : (dataArr[0] && dataArr[0].state2 ? dataArr[0].state2.substr(dataArr[0].state2.length - 3, 2) : ''),
-                "holder": cliente[0].nu_documento
+                "holder": cliente[0].nu_documento,
+                "paymentType": paymentVerification(cliente[0].paymentType),
+                "serviceType": serviceVerification(cliente[0].serviceType),
+                "general": cliente[0].id_franqueado
             };
             arrBD.push(dep2);
-        } else if (dataArr[2] && dataArr[2].nu_documento3 != null) {
+        }
+        if (dataArr[2] && dataArr[2].nu_documento3 != null) {
             const data = dataArr[2].birthday1 ? dataArr[2].birthday1.split('/') : null;
             const birthdayFormat3 = data ? data : null;
 
@@ -169,7 +186,10 @@ async function ativarBeneficiarioSubpainel(cpf, body) {
                 "address": dataArr[2].address3,
                 "city": dataArr[2].city3,
                 "state": dataArr[0] && dataArr[0].state3 && dataArr[0].state3.length <= 2 ? dataArr[0].state3 : (dataArr[0] && dataArr[0].state3 ? dataArr[0].state3.substr(dataArr[0].state3.length - 3, 2) : ''),
-                "holder": cliente[0].nu_documento
+                "holder": cliente[0].nu_documento,
+                "paymentType": paymentVerification(cliente[0].paymentType),
+                "serviceType": serviceVerification(cliente[0].serviceType),
+                "general": cliente[0].id_franqueado
             };
             arrBD.push(dep3);
         }

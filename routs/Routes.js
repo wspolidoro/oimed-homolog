@@ -1917,6 +1917,7 @@ router.post('/franqueado/listunique', async (req, res) => {
 // Atributos seguros e necessários para operações da tela de Clientes (remove campos mortos/lixo do banco)
 const CLIENT_SAFE_ATTRIBUTES = [
   'id',
+  'uuid',
   'nm_cliente',
   'nu_documento',
   'birthday',
@@ -1941,6 +1942,7 @@ const CLIENT_SAFE_ATTRIBUTES = [
 
 const SUBCLIENT_SAFE_ATTRIBUTES = [
   'id',
+  'uuid',
   'nm_cliente',
   'nu_documento',
   'birthday',
@@ -2682,6 +2684,20 @@ router.put('/beneficiaries/reactivate/:cpf', async (req, res) => {
       }
     });
 
+    // Atualiza status do cliente para ativo na OIMED
+    await Clientes.update({
+      situacao: 'ativo',
+      dtAtivacao: new Date(),
+      uuid: uuid
+    }, {
+      where: {
+        [Op.or]: [
+          { nu_documento: cpfinformed },
+          { nu_documento: req.params.cpf }
+        ]
+      }
+    }).catch(() => {});
+
     return res.json(retorno.data);
   } catch (err) {
     console.error("Erro na reativação na Rapidoc:", err.response?.data || err.message);
@@ -2689,298 +2705,336 @@ router.put('/beneficiaries/reactivate/:cpf', async (req, res) => {
   }
 });
 
-///ativar vida manualmente via painel oimed
+///ativar vida manualmente via painel oimed (primeira ativação)
 router.post('/beneficiaries/create/:cpf', async (req, res) => {
   const cpf = req.params.cpf;
-  console.log("req.body", req.params)
+  const cleanCpf = String(cpf || '').replace(/\D/g, '');
 
-  if (req.body == 1) {
+  function paymentVerification(paymentType) {
+    if (!paymentType) return 'S';
+    const pt = String(paymentType).toUpperCase().trim();
+    if (pt === 'A') return 'A';
+    return 'S'; // Rapidoc exige estritamente 'S' (Subvencionado) ou 'A' (Associado)
+  }
 
-    //configuracao da data
-    const myDate = req.body.birthday;
-    console.log(req.body)
+  function serviceVerification(serviceType) {
+    if (!serviceType) return 'G';
+    const st = String(serviceType).toUpperCase().trim();
+    if (st === 'GS' || st === 'GSP') return 'G';
+    return st || 'G';
+  }
 
-    const dia = myDate.substr(0, 2);
-    const mes = myDate.substr(2, 2);
-    const ano = myDate.substr(4, 4);
+  function formatBirthday(dateStr) {
+    if (!dateStr) return '2000-01-01';
+    const s = String(dateStr).trim();
+    if (s.includes('/')) {
+      const parts = s.split('/');
+      if (parts.length === 3) {
+        return `${parts[2].trim()}-${parts[1].trim().padStart(2, '0')}-${parts[0].trim().padStart(2, '0')}`;
+      }
+    }
+    if (s.includes('-')) {
+      const parts = s.split('-');
+      if (parts.length === 3 && parts[0].length === 4) {
+        return s;
+      }
+    }
+    const cleanDigits = s.replace(/\D/g, '');
+    if (cleanDigits.length === 8) {
+      const d = cleanDigits.substr(0, 2);
+      const m = cleanDigits.substr(2, 2);
+      const y = cleanDigits.substr(4, 4);
+      return `${y}-${m}-${d}`;
+    }
+    return s;
+  }
 
-    const dataVerify = /\//.test(myDate);
+  // Se veio payload completo no body (ex: formulário manual indie)
+  if (req.body && req.body.name && req.body.cpf) {
+    const birthdayFormat = formatBirthday(req.body.birthday);
 
-    var modifieData1 = () => {
-      const dataSplit = myDate.split('/');
-      const format = `${dataSplit[2]}-${dataSplit[1]}-${dataSplit[0]}`;
-
-      return format;
-    };
-
-    var modifieData2 = `${ano}-${mes}-${dia}`;
-
-    const birthdayFormat = dataVerify ? modifieData1() : modifieData2; //formatar data para 0000-00-00
-
-    //Array principal que vai para rapidoc
     const arrBD = [
       {
         "name": req.body.name,
-        "cpf": req.body.cpf,
+        "cpf": String(req.body.cpf).replace(/\D/g, ''),
         "birthday": birthdayFormat,
-        "phone": req.body.phone,
+        "phone": String(req.body.phone || '').replace(/\D/g, ''),
         "email": req.body.email,
-        "zipCode": req.body.zipCode,
-        "address": req.body.address,
-        "city": req.body.city,
-        "state": req.body.state,
-        "paymentType": "S",
-        "serviceType": "G",
-        "holder": req.body.holder,
+        "zipCode": String(req.body.zipCode || '').replace(/\D/g, ''),
+        "address": req.body.address || "Rua Principal, 100",
+        "city": req.body.city || "São Paulo",
+        "state": (req.body.state && req.body.state.length <= 2) ? req.body.state : (req.body.state ? req.body.state.substr(req.body.state.length - 2) : "SP"),
+        "paymentType": paymentVerification(req.body.paymentType),
+        "serviceType": serviceVerification(req.body.serviceType),
+        "holder": req.body.holder ? String(req.body.holder).replace(/\D/g, '') : "",
         "general": ""
       }
     ];
 
+    try {
+      const response = await axios.post(`https://api.rapidoc.tech/tema/api/beneficiaries`, arrBD, {
+        headers: {
+          'clientId': process.env.CLIENT_ID || '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
+          'Authorization': process.env.AUTHORIZATION || 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
+          'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+        }
+      });
 
-
-    const response = await axios.post(`https://api.rapidoc.tech/tema/api/beneficiaries`, arrBD, {
-      headers: {
-        'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
-        'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
-        'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+      if (response.data && response.data.success === true) {
+        return res.json(response.data);
+      } else {
+        return res.status(400).json(response.data);
       }
-    });
-
-
-
-    if (response.data.success == true) {
-      //acão para registrar ativaçao da vida na rapidoc
-      /* const franqueado = await Franqueado.findAll({
-         where: { id: cliente[0].id_franqueado }
-       });
- 
-       let vidasAtivas = franqueado[0].vendas;
- 
-       const novaVida = await Franqueado.update({
-         vendas: parseInt(vidasAtivas) + 1,
-       }, {
-         where: {
-           id: cliente[0].id_franqueado,
-         }
-       });*/
-
-      //resposta para o cliente
-      res.send(response.data);
-      console.log(response.data)
-      console.log("criado: ", response.data);
-      return true;
-    } else {
-      res.send(response.data);
-      console.log("erro ao criar indie: ", response.data);
-      return false;
+    } catch (errIndie) {
+      return res.status(400).json(errIndie.response?.data || { success: false, message: errIndie.message });
     }
   }
 
-  //buscar dados pelo cpf na tabela de clientes
+  // Buscar dados pelo CPF na tabela de clientes
   const cliente = await Clientes.findAll({
-    where: { nu_documento: cpf }
+    where: {
+      [Op.or]: [
+        { nu_documento: cleanCpf },
+        { nu_documento: cpf }
+      ]
+    }
   });
 
-
-  //console.log('manutenção', serviceVerification(cliente[0].serviceType))
-  function serviceVerification(serviceType) {
-    if (serviceType === 'GS' || serviceType === 'GSP') {
-      return 'G';
-    } else {
-      return serviceType;
-    };
+  if (!cliente || cliente.length < 1) {
+    console.log("Cliente não encontrado na base de dados para ativação:", cpf);
+    return res.status(404).json({ success: false, message: "Cliente não encontrado na base de dados." });
   }
 
+  const birthdayFormat = formatBirthday(cliente[0].birthday);
+  const stateVal = String(cliente[0].state || '').trim();
+  const cleanState = stateVal.length <= 2 ? stateVal : (stateVal.length > 2 ? stateVal.substr(stateVal.length - 2) : "SP");
 
-  if (cliente.length < 1) {
-    console.log("cliente não encontrado na base de dados")
-    return;
-  }
-
-
-
-  //configuracao da data
-  const myDate = cliente[0].birthday;
-
-
-  const dia = myDate.substr(0, 2);
-  const mes = myDate.substr(2, 2);
-  const ano = myDate.substr(4, 4);
-
-  const dataVerify = /\//.test(myDate);
-
-  var modifieData1 = () => {
-    const dataSplit = myDate.split('/');
-
-    const format = `${dataSplit[2]}-${dataSplit[1]}-${dataSplit[0]}`;
-
-    // Regex para encontrar um espaço em branco em qualquer lugar na string
-    const cleanedDateString = format.replace(/\s/g, '');
-
-    return cleanedDateString;
-  };
-
-  var modifieData2 = `${ano}-${mes}-${dia}`;
-
-  const birthdayFormat = dataVerify ? modifieData1() : modifieData2; //formatar data para 0000-00-00
-
-  console.log(modifieData2, birthdayFormat)
-
-  //Array principal que vai para rapidoc
+  // Array principal que vai para Rapidoc
   const arrBD = [
     {
       "name": cliente[0].nm_cliente,
-      "cpf": cliente[0].nu_documento,
+      "cpf": cleanCpf,
       "birthday": birthdayFormat,
-      "phone": cliente[0].telefone,
+      "phone": String(cliente[0].telefone || '').replace(/\D/g, ''),
       "email": cliente[0].email,
-      "zipCode": cliente[0].zip_code,
-      "address": "rua do teste, 01",//cliente[0].address,
-      "city": cliente[0].city,
-      "state": cliente[0].state.length <= 2 ? cliente[0].state : cliente[0].state.substr(cliente[0].state.length - 3, 2),
-      "paymentType": cliente[0].paymentType,
+      "zipCode": String(cliente[0].zip_code || '').replace(/\D/g, ''),
+      "address": cliente[0].address || "Rua Principal, 100",
+      "city": cliente[0].city || "São Paulo",
+      "state": cleanState || "SP",
+      "paymentType": paymentVerification(cliente[0].paymentType),
       "serviceType": serviceVerification(cliente[0].serviceType),
-      "holder": cliente[0].cpf_titular === 'titular' ? "" : cliente[0].cpf_titular,
-      "general": cliente[0].id_franqueado
+      "holder": (cliente[0].cpf_titular === 'titular' || !cliente[0].cpf_titular) ? "" : String(cliente[0].cpf_titular).replace(/\D/g, ''),
+      "general": String(cliente[0].id_franqueado || '')
     }
   ];
 
+  // Dependentes
+  let dataArr = [];
+  try {
+    if (cliente[0].beneficiarios) {
+      dataArr = typeof cliente[0].beneficiarios === 'string'
+        ? JSON.parse(cliente[0].beneficiarios)
+        : cliente[0].beneficiarios;
+    }
+  } catch (errJson) {
+    console.warn("Erro ao fazer parse de beneficiarios dependentes:", errJson.message);
+  }
 
-
-
-
-  //console.log("clientessssssssssssssss", cliente[0])
-  const dataArr = JSON.parse(cliente[0].beneficiarios);
-  //console.log("debug: ", dataArr)
-  //console.log(dataArr[0].birthday1)
-  //try {
-
-  if (dataArr.length > 0) {
-    if (dataArr[0].nu_documento1 != null) {
-      console.log("testando")
-      const data = dataArr[0].birthday1.split('/');
-      const birthdayFormat1 = data ? data : null;
-
-      console.log("teste da data", dataArr[0].nu_documento1)
-
-      const dep1 = {
+  if (Array.isArray(dataArr) && dataArr.length > 0) {
+    if (dataArr[0] && dataArr[0].nu_documento1) {
+      const depState = String(dataArr[0].state1 || cleanState || 'SP').trim();
+      arrBD.push({
         "name": dataArr[0].nm_cliente1,
-        "cpf": dataArr[0].nu_documento1,
-        "birthday": `${birthdayFormat1[2]}-${birthdayFormat1[1]}-${birthdayFormat1[0]}`,
-        "phone": dataArr[0].telefone1,
-        "email": dataArr[0].email1,
-        "zipCode": dataArr[0].zipCode1,
-        "address": dataArr[0].address1,
-        "city": dataArr[0].city1,
-        "state": dataArr[0].state1.length <= 2 ? dataArr[0].state1 : dataArr[0].state1.substr(dataArr[0].state1.length - 3, 2),
-        "holder": cliente[0].nu_documento
-      }
+        "cpf": String(dataArr[0].nu_documento1).replace(/\D/g, ''),
+        "birthday": formatBirthday(dataArr[0].birthday1),
+        "phone": String(dataArr[0].telefone1 || cliente[0].telefone || '').replace(/\D/g, ''),
+        "email": dataArr[0].email1 || cliente[0].email,
+        "zipCode": String(dataArr[0].zipCode1 || cliente[0].zip_code || '').replace(/\D/g, ''),
+        "address": dataArr[0].address1 || cliente[0].address || "Rua Principal, 100",
+        "city": dataArr[0].city1 || cliente[0].city,
+        "state": depState.length <= 2 ? depState : depState.substr(depState.length - 2),
+        "paymentType": paymentVerification(cliente[0].paymentType),
+        "serviceType": serviceVerification(cliente[0].serviceType),
+        "holder": cleanCpf,
+        "general": String(cliente[0].id_franqueado || '')
+      });
+    }
 
-      arrBD.push(dep1);
-    } else if (dataArr[1].nu_documento2 != null) {
-      const data = dataArr[1].birthday1.split('/');
-      const birthdayFormat2 = data ? data : null;
-
-      const dep2 = {
+    if (dataArr[1] && dataArr[1].nu_documento2) {
+      const depState = String(dataArr[1].state2 || cleanState || 'SP').trim();
+      arrBD.push({
         "name": dataArr[1].nm_cliente2,
-        "cpf": dataArr[1].nu_documento2,
-        "birthday": `${birthdayFormat2[2]}-${birthdayFormat2[1]}-${birthdayFormat2[0]}`,
-        "phone": dataArr[1].telefone2,
-        "email": dataArr[1].email2,
-        "zipCode": dataArr[1].zipCode2,
-        "address": dataArr[1].address2,
-        "city": dataArr[1].city2,
-        "state": dataArr[0].state2.length <= 2 ? dataArr[0].state2 : dataArr[0].state2.substr(dataArr[0].state2.length - 3, 2),
-        "holder": cliente[0].nu_documento
-      }
+        "cpf": String(dataArr[1].nu_documento2).replace(/\D/g, ''),
+        "birthday": formatBirthday(dataArr[1].birthday2),
+        "phone": String(dataArr[1].telefone2 || cliente[0].telefone || '').replace(/\D/g, ''),
+        "email": dataArr[1].email2 || cliente[0].email,
+        "zipCode": String(dataArr[1].zipCode2 || cliente[0].zip_code || '').replace(/\D/g, ''),
+        "address": dataArr[1].address2 || cliente[0].address || "Rua Principal, 100",
+        "city": dataArr[1].city2 || cliente[0].city,
+        "state": depState.length <= 2 ? depState : depState.substr(depState.length - 2),
+        "paymentType": paymentVerification(cliente[0].paymentType),
+        "serviceType": serviceVerification(cliente[0].serviceType),
+        "holder": cleanCpf,
+        "general": String(cliente[0].id_franqueado || '')
+      });
+    }
 
-      arrBD.push(dep2);
-    } else if (dataArr[2].nu_documento3 != null) {
-      const data = dataArr[2].birthday1.split('/');
-      const birthdayFormat3 = data ? data : null;
-
-      const dep3 = {
+    if (dataArr[2] && dataArr[2].nu_documento3) {
+      const depState = String(dataArr[2].state3 || cleanState || 'SP').trim();
+      arrBD.push({
         "name": dataArr[2].nm_cliente3,
-        "cpf": dataArr[2].nu_documento3,
-        "birthday": `${birthdayFormat3[2]}-${birthdayFormat3[1]}-${birthdayFormat3[0]}`,
-        "phone": dataArr[2].telefone3,
-        "email": dataArr[2].email3,
-        "zipCode": dataArr[2].zipCode3,
-        "address": dataArr[2].address3,
-        "city": dataArr[2].city3,
-        "state": dataArr[0].state3.length <= 2 ? dataArr[0].state3 : dataArr[0].state3.substr(dataArr[0].state3.length - 3, 2),
-        "holder": cliente[0].nu_documento
-      };
-
-      arrBD.push(dep3);
+        "cpf": String(dataArr[2].nu_documento3).replace(/\D/g, ''),
+        "birthday": formatBirthday(dataArr[2].birthday3),
+        "phone": String(dataArr[2].telefone3 || cliente[0].telefone || '').replace(/\D/g, ''),
+        "email": dataArr[2].email3 || cliente[0].email,
+        "zipCode": String(dataArr[2].zipCode3 || cliente[0].zip_code || '').replace(/\D/g, ''),
+        "address": dataArr[2].address3 || cliente[0].address || "Rua Principal, 100",
+        "city": dataArr[2].city3 || cliente[0].city,
+        "state": depState.length <= 2 ? depState : depState.substr(depState.length - 2),
+        "paymentType": paymentVerification(cliente[0].paymentType),
+        "serviceType": serviceVerification(cliente[0].serviceType),
+        "holder": cleanCpf,
+        "general": String(cliente[0].id_franqueado || '')
+      });
     }
   }
 
-
-
-  // } catch(err) {
-  //    console.log("erro ao montar registro - linha 1215: ", err.message)
-  //}
-
-  console.log("debug: ", dataArr)
-  console.log("origewm: ", arrBD);
+  console.log("Enviando beneficiários para criação na Rapidoc:", arrBD);
 
   try {
     const response = await axios.post(`https://api.rapidoc.tech/tema/api/beneficiaries`, arrBD, {
       headers: {
-        'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
-        'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
+        'clientId': process.env.CLIENT_ID || '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
+        'Authorization': process.env.AUTHORIZATION || 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
         'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
       }
     });
 
-    console.log("resposta: ", response.data)
+    console.log("Resposta Rapidoc criação: ", response.data);
 
+    if (response.data && response.data.success === true) {
+      const createdUuid = response.data.beneficiaries?.[0]?.uuid || null;
+      const updateData = {
+        dtAtivacao: new Date(),
+        situacao: 'ativo'
+      };
+      if (createdUuid) {
+        updateData.uuid = createdUuid;
+      }
 
-
-
-    //console.log("0---------------> ", response.data)
-
-    if (response.data.success == true) {
-
-
-      const clienteUpdate = await Clientes.update({
-        dtAtivacao: new Date()
-      }, {
-        where: { nu_documento: cpf }
-      });
-
-      //resposta para o cliente
-      res.send(response.data);
-      console.log(response.data)
-      console.log("criado: ", response.data);
-      const dataFranqueado = await Franqueado.findAll({
+      await Clientes.update(updateData, {
         where: {
-          id: cliente[0].dataValues.id_franqueado
+          [Op.or]: [
+            { nu_documento: cleanCpf },
+            { nu_documento: cpf }
+          ]
         }
-      });
+      }).catch(() => {});
 
+      if (createdUuid) {
+        await Rapidoc.findOrCreate({
+          where: { cpf: cleanCpf },
+          defaults: {
+            nome: cliente[0].nm_cliente,
+            cpf: cleanCpf,
+            uuid: createdUuid,
+            birthday: arrBD[0].birthday
+          }
+        }).catch(() => {});
+      }
 
-      await mailerNewCadastro(dataFranqueado[0].dataValues, cliente[0].dataValues.email);
+      await Sleeping.destroy({
+        where: {
+          [Op.or]: [
+            { idVida: cleanCpf },
+            ...(createdUuid ? [{ uuid: createdUuid }] : [])
+          ]
+        }
+      }).catch(() => {});
 
-      let sending = await sendMailError(arrBD, "Vida cadastrada na Central principal", response.data, cliente[0].id_franqueado, "CONCLUIDO"); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
-      return true;
+      try {
+        const dataFranqueado = await Franqueado.findAll({
+          where: { id: cliente[0].id_franqueado }
+        });
+        if (dataFranqueado && dataFranqueado.length > 0) {
+          await mailerNewCadastro(dataFranqueado[0].dataValues, cliente[0].email);
+        }
+      } catch (errMail) {
+        console.warn("Aviso ao enviar e-mail de novo cadastro:", errMail.message);
+      }
+
+      await sendMailError(arrBD, "Vida cadastrada na Central principal", response.data, cliente[0].id_franqueado, "CONCLUIDO").catch(() => {});
+
+      return res.json(response.data);
     } else {
-      res.send(response.data);
-      console.log("erro ao criar: ", response.data);
-      console.log("kledisom")
-      let sending = await sendMailError(arrBD, "Vida não cadastrada na Central principal", response.data, cliente[0].id_franqueado, "PENDENTE");
-      //let sendingCadastro = await mailerNewCadastro([], "Vida cadastrada na Central principal", 'response.data, cliente[0].id_franqueado', "CONCLUIDO"); //obj com dados dos cliente - msg padrão - msg de erro ou success - identificador do painel
+      // Se a Rapidoc informar que o beneficiário já existe/já foi cadastrado, aciona reativação automática
+      const msg = String(response.data?.message || '').toLowerCase();
+      if (msg.includes('já utilizado') || msg.includes('já cadastrado') || msg.includes('já existe') || msg.includes('already exists')) {
+        console.log(`Beneficiário ${cleanCpf} já existia na Rapidoc. Tentando reativação automática...`);
+        try {
+          let existingUuid = cliente[0].uuid;
+          if (!existingUuid) {
+            const rRec = await Rapidoc.findOne({ where: { cpf: cleanCpf }, raw: true });
+            if (rRec && rRec.uuid) existingUuid = rRec.uuid;
+          }
+          if (!existingUuid) {
+            const respGet = await axios.get(`https://api.rapidoc.tech/tema/api/beneficiaries/${cleanCpf}`, {
+              headers: {
+                'clientId': process.env.CLIENT_ID || '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
+                'Authorization': process.env.AUTHORIZATION || 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
+                'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+              }
+            });
+            if (respGet.data?.beneficiary?.uuid) existingUuid = respGet.data.beneficiary.uuid;
+          }
 
-      return false;
+          if (existingUuid) {
+            const resReat = await axios.put(`https://api.rapidoc.tech/tema/api/beneficiaries/${existingUuid}/reactivate`, "data", {
+              headers: {
+                'clientId': process.env.CLIENT_ID || '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
+                'Authorization': process.env.AUTHORIZATION || 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
+                'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+              }
+            });
+
+            await Clientes.update({
+              situacao: 'ativo',
+              dtAtivacao: new Date(),
+              uuid: existingUuid
+            }, {
+              where: {
+                [Op.or]: [
+                  { nu_documento: cleanCpf },
+                  { nu_documento: cpf }
+                ]
+              }
+            }).catch(() => {});
+
+            await Sleeping.destroy({
+              where: {
+                [Op.or]: [
+                  { idVida: cleanCpf },
+                  { uuid: existingUuid }
+                ]
+              }
+            }).catch(() => {});
+
+            return res.json(resReat.data);
+          }
+        } catch (errReat) {
+          console.warn("Falha na tentativa automática de reativação após create:", errReat.response?.data || errReat.message);
+        }
+      }
+
+      console.log("Erro ao criar na Rapidoc: ", response.data);
+      await sendMailError(arrBD, "Vida não cadastrada na Central principal", response.data, cliente[0].id_franqueado, "PENDENTE").catch(() => {});
+      return res.status(400).json(response.data);
     }
-
   } catch (err) {
-    console.log("caminho do erro: Routes.js linha 1166", err)
-    res.json(err.message);
-    res.status(400);
-    let sending = await sendMailError(arrBD, "Vida não cadastrada na Central principal", err.data, cliente[0].id_franqueado, "PENDENTE");
-    console.log("caminho do erro: Routes.js linha 1166", err.message)
+    console.error("Erro na requisição para Rapidoc em /beneficiaries/create/:cpf:", err.response?.data || err.message);
+    const errData = err.response?.data || { success: false, message: err.message };
+    await sendMailError(arrBD, "Vida não cadastrada na Central principal", errData, cliente[0].id_franqueado, "PENDENTE").catch(() => {});
+    return res.status(400).json(errData);
   }
 });
 
