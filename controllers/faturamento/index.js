@@ -1,414 +1,623 @@
-const { sequelize, sandbox } = require('../../db');
-const { faker } = require('@faker-js/faker');
-const SubFranqueado = require('../../schema/tb_sub_franqueado');
-const SubClientes = require('../../schema/tb_sub_clientes.js');
-const Franqueado = require('../../schema/tb_franqueado.js');
-const Clientes = require('../../schema/tb_clientes.js');
-const Planos = require('../../schema/tb_planos.js');
+const { sequelize } = require('../../db');
+const Franqueado = require('../../schema/tb_franqueado');
+const Clientes = require('../../schema/tb_clientes');
+const Planos = require('../../schema/tb_planos');
+const Faturamentos = require('../../schema/tb_faturamentos');
+const { Op } = require('sequelize');
 
-const { Op, Sequelize, literal } = require('sequelize');
+// Tabela de Preços Padrão do Sistema (utilizada como fallback inteligente quando o parceiro não possui oi_planos cadastrado)
+const PRECOS_PADRAO = {
+    individual: {
+        g: 3.90,
+        p: 24.90,
+        gp: 26.90,
+        gs: 5.90,
+        gsp: 30.80
+    },
+    familiar: {
+        g: 12.90,
+        p: 24.90,
+        gp: 34.90,
+        gs: 16.90,
+        gsp: 41.80
+    },
+    manutencao_mensal: 197.00
+};
+
+/**
+ * Normaliza e busca o preço do plano, garantindo fallback sem quebrar a execução
+ */
+function resolverPreco(planosList, cobertura, tipo, fallbackPrecoFranqueado = null) {
+    const cob = String(cobertura).toLowerCase();
+    const tip = String(tipo).toLowerCase();
+
+    const encontrado = planosList.find(item => 
+        String(item.plano).toLowerCase() === cob && 
+        String(item.tipo).toLowerCase() === tip
+    );
+
+    if (encontrado && encontrado.valor != null && !isNaN(Number(encontrado.valor))) {
+        return Number(encontrado.valor);
+    }
+
+    if (fallbackPrecoFranqueado != null && !isNaN(Number(fallbackPrecoFranqueado))) {
+        return Number(fallbackPrecoFranqueado);
+    }
+
+    return PRECOS_PADRAO[cob]?.[tip] ?? 0;
+}
+
+/**
+ * Normaliza e busca o valor de manutenção mensal
+ */
+function resolverManutencao(planosList) {
+    const itemManutencao = planosList.find(item => 
+        item.manutencao_mensal != null && !isNaN(Number(item.manutencao_mensal)) && Number(item.manutencao_mensal) > 0
+    );
+
+    if (itemManutencao) {
+        return Number(itemManutencao.manutencao_mensal);
+    }
+
+    return PRECOS_PADRAO.manutencao_mensal;
+}
 
 module.exports = {
-    listParceiros: async (req, res) => {
-        const linkFranqueado = await Franqueado.findAll({
-            order: [["nome", "ASC"]],
-            offset: 2,
-            attributes: ['id', 'nome']
-        });
-
-        res.json(linkFranqueado);
-
-    },
-    listDados: async (req, res) => {
-
-
-        const agora = new Date();
-        const mesAnterior = new Date(agora.getFullYear(), agora.getMonth() - 1, 1);
-        const inicioMesAnterior = new Date(mesAnterior.getFullYear(), mesAnterior.getMonth(), 1);
-        const fimMesAnterior = new Date(mesAnterior.getFullYear(), mesAnterior.getMonth() + 1, 0);
-
-
-
-        //INDIVIDUAL
-        const listClientes = await Clientes.findAll({
-            where: {
-                id_franqueado: req.params.id,
-                cobertura: "individual",
-                //situacao: "ativo"
-                /*     dtAtivacao: {
-                        [Op.between]: [inicioMesAnterior, fimMesAnterior]
-                    },
-                    dtDesativacao: {
-                        [Op.between]: [inicioMesAnterior, fimMesAnterior]
-                    } */
-            },
-            attributes: ['id', 'nm_cliente', 'serviceType', 'dtDesativacao', 'cobertura', 'situacao'],
-            raw: true
-        });
-
-
-        const qtdaG = listClientes.filter(item => item.serviceType === "G" && item.situacao === "ativo").length;
-        const qtdaP = listClientes.filter(item => item.serviceType === "P" && item.situacao === "ativo").length;
-        const qtdaGP = listClientes.filter(item => item.serviceType === "GP" && item.situacao === "ativo").length;
-        const qtdaGS = listClientes.filter(item => item.serviceType === "GS" && item.situacao === "ativo").length;
-        const qtdaGSP = listClientes.filter(item => item.serviceType === "GSP" && item.situacao === "ativo").length;
-
-        const countPlans = {
-            G: qtdaG,
-            P: qtdaP,
-            GP: qtdaGP,
-            GS: qtdaGS,
-            GSP: qtdaGSP
-        };
-
-        /*        const calcTotal = countPlans.reduce((acc, obj) => {
-                   const total = Object.values(obj)[0];
-                   return acc + total;
-               }, 0) */
-
-        const calcTotal = Object.values(countPlans).reduce((acc, total) => acc + total, 0);
-
-        //console.log(listClientes)
-
-        const currentDeactivate = listClientes.filter(item => {
-
-            // if (item.situacao === "ativo") return;
-
-            const data = new Date(item.dtDesativacao);
-            const hoje = new Date();
-            const mesAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
-
-            const mesmoMes = data.getFullYear() === mesAnterior.getFullYear() &&
-                data.getMonth() === mesAnterior.getMonth() && item.situacao === "inativo";
-
-            /*  const data = new Date(item.dtDesativacao);
-             const hoje = new Date();
- 
-             const mesmoMes = data.getUTCFullYear() === hoje.getUTCFullYear() &&
-                 data.getUTCMonth() === hoje.getUTCMonth();
-  */
-            //console.log('very', mesmoMes)
-            return mesmoMes;
-
-        })
-
-        //FAMILIAR
-        const listClientesFamiliar = await Clientes.findAll({
-            where: {
-                id_franqueado: req.params.id,
-                cobertura: "familiar",
-                cpf_titular: "titular",
-                //situacao: "ativo"
-            },
-            attributes: ['id', 'nm_cliente', 'serviceType', 'dtDesativacao', 'cobertura', 'situacao'],
-            raw: true
-        });
-
-        const qtdaGFamiliar = listClientesFamiliar.filter(item => item.serviceType === "G" && item.situacao === "ativo").length;
-        const qtdaPFamiliar = listClientesFamiliar.filter(item => item.serviceType === "P" && item.situacao === "ativo").length;
-        const qtdaGPFamiliar = listClientesFamiliar.filter(item => item.serviceType === "GP" && item.situacao === "ativo").length;
-        const qtdaGSFamiliar = listClientesFamiliar.filter(item => item.serviceType === "GS" && item.situacao === "ativo").length;
-        const qtdaGSPFamiliar = listClientesFamiliar.filter(item => item.serviceType === "GSP" && item.situacao === "ativo").length;
-
-        const countPlansFamiliar = {
-            G: qtdaGFamiliar,
-            P: qtdaPFamiliar,
-            GP: qtdaGPFamiliar,
-            GS: qtdaGSFamiliar,
-            GSP: qtdaGSPFamiliar
-        };
-
-        /*     const calcTotalFamiliar = countPlansFamiliar.reduce((acc, obj) => {
-                const total = Object.values(obj)[0];
-                return acc + total;
-            }, 0)
+    /**
+     * Lista parceiros disponíveis para faturamento.
+     * Administradores Master veem todos; Parceiros veem apenas o seu próprio cadastro.
      */
-
-
-        const calcTotalFamiliar = Object.values(countPlansFamiliar).reduce((acc, total) => acc + total, 0);
-
-        //console.log(listClientesFamiliar)
-
-        const currentDeactivateFamiliar = listClientesFamiliar.filter(item => {
-
-            // if (item.situacao === "ativo") return;
-
-            const data = new Date(item.dtDesativacao);
-            const hoje = new Date();
-            const mesAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
-
-            const mesmoMes = data.getFullYear() === mesAnterior.getFullYear() &&
-                data.getMonth() === mesAnterior.getMonth() && item.situacao === "inativo";
-
-            /*   const data = new Date(item.dtDesativacao);
-              const hoje = new Date();
-  
-              const mesmoMes = data.getUTCFullYear() === hoje.getUTCFullYear() &&
-                  data.getUTCMonth() === hoje.getUTCMonth(); */
-
-            // console.log(mesmoMes)
-            return mesmoMes;
-
-        })
-        /* 
-                const query = `
-          SELECT *
-          FROM oi_clientes
-          WHERE MONTH(dtDesativacao) = MONTH(CURDATE() - INTERVAL 1 MONTH)
-            AND YEAR(dtDesativacao) = YEAR(CURDATE() - INTERVAL 1 MONTH)
-            AND id_franqueado = 76
-            AND situacao = 'inativo'
-            AND cobertura = 'individual';
-        `;
-        
-        const clientes = await sequelize.query(query, {
-          type: Sequelize.QueryTypes.SELECT
-        });
-        
-        console.log(clientes.length); */
-
-        const planosList = await Planos.findAll({
-            where: {
-                id_franqueado: req.params.id
-            },
-            raw: true
-        });
-
-        let val = (plano, tipo) => planosList.find(item => item.plano === plano && item.tipo === tipo);
-
-
+    listParceiros: async (req, res) => {
         try {
-            let typeG = Number(val('individual', 'g').valor) * Number(countPlans.G);
-            let typeP = Number(val('individual', 'p').valor) * Number(countPlans.P);
-            //let typeGP = Number(val('individual', 'GP').valor) * Number(countPlans.GP);
-            let typeGS = Number(val('individual', 'gs').valor) * Number(countPlans.GS);
-            let typeGSP = Number(val('individual', 'gsp').valor) * Number(countPlans.GSP);
+            const user = req.user || {};
+            const isMaster = user.autoridade === 1 || user.perfil === 'master';
 
-            let typeGFamiliar = Number(val('familiar', 'g').valor) * Number(countPlansFamiliar.G);
-            let typePFamiliar = Number(val('familiar', 'p').valor) * Number(countPlansFamiliar.P);
-            //let typeGP = Number(val('familiar', 'GP').valor) * Number(countPlansFamiliar.GP);
-            let typeGSFamiliar = Number(val('familiar', 'gs').valor) * Number(countPlansFamiliar.GS);
-            let typeGSPFamiliar = Number(val('familiar', 'gsp').valor) * Number(countPlansFamiliar.GSP);
+            const where = {};
+            if (!isMaster && user.id) {
+                where.id = user.id;
+            }
 
-            let totalIndividual = typeG + typeP + typeGS + typeGSP;
-            let totalFamiliar = typeGFamiliar + typePFamiliar + typeGSFamiliar + typeGSPFamiliar;
+            const parceiros = await Franqueado.findAll({
+                where,
+                order: [['nome', 'ASC']],
+                attributes: ['id', 'nome', 'cpf', 'status', 'precoIndividual', 'precoFamiliar', 'perfil']
+            });
 
-            console.log(planosList, totalIndividual, totalFamiliar, totalIndividual + totalFamiliar + Number(val('familiar', 'gsp').manutencao_mensal))
+            return res.json(parceiros);
+        } catch (err) {
+            console.error("Erro ao listar parceiros para faturamento:", err);
+            return res.status(500).json({ error: "Erro interno ao listar parceiros." });
+        }
+    },
 
-            //let typeGFamiliar = val('familiar', 'G').valor + countPlansFamiliar.G;
+    /**
+     * Calcula o faturamento detalhado de um parceiro em tempo real (com base nos clientes ativos/inativos)
+     * e cruza com faturas já fechadas na tabela oi_faturamentos.
+     */
+    listDados: async (req, res) => {
+        try {
+            const partnerId = req.params.id || req.query.id;
+            const user = req.user || {};
+            const isMaster = user.autoridade === 1 || user.perfil === 'master';
 
-            //console.log("insou", currentDeactivate, currentDeactivateFamiliar)
+            // Segurança: parceiro comum só pode consultar o seu próprio ID
+            if (!isMaster && user.id && String(user.id) !== String(partnerId)) {
+                return res.status(403).json({ success: false, message: "Acesso restrito ao seu próprio faturamento." });
+            }
 
-            const precos = await Franqueado.findOne({
-                where: { id: req.params.id },
-                attributes: ['precoIndividual', 'precoFamiliar'],
+            const parceiro = await Franqueado.findByPk(partnerId, {
+                attributes: ['id', 'nome', 'cpf', 'email', 'telefone', 'status', 'precoIndividual', 'precoFamiliar'],
                 raw: true
-            })
+            });
 
+            if (!parceiro) {
+                return res.status(404).json({ success: false, message: "Parceiro não encontrado." });
+            }
 
-            res.json({
+            // Definição do período de referência (Mês e Ano)
+            const hoje = new Date();
+            const mesParam = parseInt(req.query.mes, 10);
+            const anoParam = parseInt(req.query.ano, 10);
+
+            const mesReferenciaNum = (!isNaN(mesParam) && mesParam >= 1 && mesParam <= 12) ? mesParam : hoje.getMonth() + 1;
+            const anoReferenciaNum = (!isNaN(anoParam) && anoParam >= 2020) ? anoParam : hoje.getFullYear();
+            const mesFormatado = String(mesReferenciaNum).padStart(2, '0');
+            const chaveMesAno = `${anoReferenciaNum}-${mesFormatado}`;
+
+            // Período para contagem de inativações (mês anterior ao fechamento ou mês de referência)
+            const inicioPeriodo = new Date(anoReferenciaNum, mesReferenciaNum - 1, 1);
+            const fimPeriodo = new Date(anoReferenciaNum, mesReferenciaNum, 0, 23, 59, 59);
+
+            // 1. Busca Clientes Individuais
+            const listClientesIndividual = await Clientes.findAll({
+                where: {
+                    id_franqueado: partnerId,
+                    cobertura: 'individual'
+                },
+                attributes: ['id', 'nm_cliente', 'serviceType', 'dtDesativacao', 'dtAtivacao', 'cobertura', 'situacao'],
+                raw: true
+            });
+
+            // 2. Busca Clientes Familiares (apenas os titulares para fins de contagem do plano familiar)
+            const listClientesFamiliar = await Clientes.findAll({
+                where: {
+                    id_franqueado: partnerId,
+                    cobertura: 'familiar',
+                    [Op.or]: [
+                        { cpf_titular: 'titular' },
+                        { cpf_titular: null },
+                        { cpf_titular: '' }
+                    ]
+                },
+                attributes: ['id', 'nm_cliente', 'serviceType', 'dtDesativacao', 'dtAtivacao', 'cobertura', 'situacao'],
+                raw: true
+            });
+
+            // 3. Contagem por tipo de serviço (Individual)
+            const countIndividual = {
+                G: listClientesIndividual.filter(c => c.situacao === 'ativo' && String(c.serviceType).toUpperCase() === 'G').length,
+                P: listClientesIndividual.filter(c => c.situacao === 'ativo' && String(c.serviceType).toUpperCase() === 'P').length,
+                GP: listClientesIndividual.filter(c => c.situacao === 'ativo' && String(c.serviceType).toUpperCase() === 'GP').length,
+                GS: listClientesIndividual.filter(c => c.situacao === 'ativo' && String(c.serviceType).toUpperCase() === 'GS').length,
+                GSP: listClientesIndividual.filter(c => c.situacao === 'ativo' && String(c.serviceType).toUpperCase() === 'GSP').length,
+            };
+            const totalAtivosIndividual = Object.values(countIndividual).reduce((acc, v) => acc + v, 0);
+
+            // Inativos no período (Individual)
+            const inativosIndividual = listClientesIndividual.filter(c => {
+                if (c.situacao !== 'inativo') return false;
+                if (!c.dtDesativacao) return false;
+                const d = new Date(c.dtDesativacao);
+                return d >= inicioPeriodo && d <= fimPeriodo;
+            }).length;
+
+            // 4. Contagem por tipo de serviço (Familiar)
+            const countFamiliar = {
+                G: listClientesFamiliar.filter(c => c.situacao === 'ativo' && String(c.serviceType).toUpperCase() === 'G').length,
+                P: listClientesFamiliar.filter(c => c.situacao === 'ativo' && String(c.serviceType).toUpperCase() === 'P').length,
+                GP: listClientesFamiliar.filter(c => c.situacao === 'ativo' && String(c.serviceType).toUpperCase() === 'GP').length,
+                GS: listClientesFamiliar.filter(c => c.situacao === 'ativo' && String(c.serviceType).toUpperCase() === 'GS').length,
+                GSP: listClientesFamiliar.filter(c => c.situacao === 'ativo' && String(c.serviceType).toUpperCase() === 'GSP').length,
+            };
+            const totalAtivosFamiliar = Object.values(countFamiliar).reduce((acc, v) => acc + v, 0);
+
+            // Inativos no período (Familiar)
+            const inativosFamiliar = listClientesFamiliar.filter(c => {
+                if (c.situacao !== 'inativo') return false;
+                if (!c.dtDesativacao) return false;
+                const d = new Date(c.dtDesativacao);
+                return d >= inicioPeriodo && d <= fimPeriodo;
+            }).length;
+
+            // 5. Preços configurados na tabela oi_planos
+            const planosList = await Planos.findAll({
+                where: { id_franqueado: partnerId },
+                raw: true
+            });
+
+            // Tabela com os preços unitários calculados
+            const precosUnitarios = {
+                individual: {
+                    G: resolverPreco(planosList, 'individual', 'g', parceiro.precoIndividual),
+                    P: resolverPreco(planosList, 'individual', 'p', parceiro.precoIndividual),
+                    GP: resolverPreco(planosList, 'individual', 'gp', parceiro.precoIndividual),
+                    GS: resolverPreco(planosList, 'individual', 'gs', parceiro.precoIndividual),
+                    GSP: resolverPreco(planosList, 'individual', 'gsp', parceiro.precoIndividual),
+                },
+                familiar: {
+                    G: resolverPreco(planosList, 'familiar', 'g', parceiro.precoFamiliar),
+                    P: resolverPreco(planosList, 'familiar', 'p', parceiro.precoFamiliar),
+                    GP: resolverPreco(planosList, 'familiar', 'gp', parceiro.precoFamiliar),
+                    GS: resolverPreco(planosList, 'familiar', 'gs', parceiro.precoFamiliar),
+                    GSP: resolverPreco(planosList, 'familiar', 'gsp', parceiro.precoFamiliar),
+                },
+                manutencao_mensal: resolverManutencao(planosList)
+            };
+
+            // Cálculo dos Subtotais
+            const subtotalIndividualG = countIndividual.G * precosUnitarios.individual.G;
+            const subtotalIndividualP = countIndividual.P * precosUnitarios.individual.P;
+            const subtotalIndividualGP = countIndividual.GP * precosUnitarios.individual.GP;
+            const subtotalIndividualGS = countIndividual.GS * precosUnitarios.individual.GS;
+            const subtotalIndividualGSP = countIndividual.GSP * precosUnitarios.individual.GSP;
+            const totalIndividual = subtotalIndividualG + subtotalIndividualP + subtotalIndividualGP + subtotalIndividualGS + subtotalIndividualGSP;
+
+            const subtotalFamiliarG = countFamiliar.G * precosUnitarios.familiar.G;
+            const subtotalFamiliarP = countFamiliar.P * precosUnitarios.familiar.P;
+            const subtotalFamiliarGP = countFamiliar.GP * precosUnitarios.familiar.GP;
+            const subtotalFamiliarGS = countFamiliar.GS * precosUnitarios.familiar.GS;
+            const subtotalFamiliarGSP = countFamiliar.GSP * precosUnitarios.familiar.GSP;
+            const totalFamiliar = subtotalFamiliarG + subtotalFamiliarP + subtotalFamiliarGP + subtotalFamiliarGS + subtotalFamiliarGSP;
+
+            const totalManutencao = precosUnitarios.manutencao_mensal;
+            const valorTotalConsolidado = totalIndividual + totalFamiliar + totalManutencao;
+
+            // 6. Verifica se já existe fatura fechada/salva para este parceiro e período na tabela oi_faturamentos
+            const faturaSalva = await Faturamentos.findOne({
+                where: {
+                    id_franqueado: partnerId,
+                    [Op.or]: [
+                        { mes_referencia: chaveMesAno },
+                        { mes_referencia: `${mesFormatado}/${anoReferenciaNum}` }
+                    ]
+                },
+                raw: true
+            });
+
+            return res.json({
                 success: true,
-                individualPlan: { qtdaPlans: countPlans, totalRegister: calcTotal, totalInativates: currentDeactivate.length },
-                familiarPlan: { qtdaPlans: countPlansFamiliar, totalRegister: calcTotalFamiliar, totalInativates: currentDeactivateFamiliar.length },
-                precos: precos,
+                parceiro: {
+                    id: parceiro.id,
+                    nome: parceiro.nome,
+                    cpf: parceiro.cpf,
+                    email: parceiro.email
+                },
+                mesReferencia: mesFormatado,
+                anoReferencia: anoReferenciaNum,
+                chaveMesAno: chaveMesAno,
+                individualPlan: {
+                    qtdaPlans: countIndividual,
+                    subtotais: {
+                        G: subtotalIndividualG,
+                        P: subtotalIndividualP,
+                        GP: subtotalIndividualGP,
+                        GS: subtotalIndividualGS,
+                        GSP: subtotalIndividualGSP
+                    },
+                    totalRegister: totalAtivosIndividual,
+                    totalInativates: inativosIndividual,
+                    valorTotal: totalIndividual
+                },
+                familiarPlan: {
+                    qtdaPlans: countFamiliar,
+                    subtotais: {
+                        G: subtotalFamiliarG,
+                        P: subtotalFamiliarP,
+                        GP: subtotalFamiliarGP,
+                        GS: subtotalFamiliarGS,
+                        GSP: subtotalFamiliarGSP
+                    },
+                    totalRegister: totalAtivosFamiliar,
+                    totalInativates: inativosFamiliar,
+                    valorTotal: totalFamiliar
+                },
+                precosUnitarios: precosUnitarios,
                 precoTotalIndividual: totalIndividual,
                 precoTotalFamiliar: totalFamiliar,
-                precoTotal: totalIndividual + totalFamiliar + Number(val('familiar', 'gsp').manutencao_mensal)
+                valorManutencao: totalManutencao,
+                precoTotal: valorTotalConsolidado,
+                totalVidas: totalAtivosIndividual + totalAtivosFamiliar,
+                faturaSalva: faturaSalva || null
+            });
+
+        } catch (err) {
+            console.error("Erro ao calcular faturamento:", err);
+            return res.status(500).json({
+                success: false,
+                message: "Erro ao calcular os valores de faturamento."
+            });
+        }
+    },
+
+    /**
+     * Retorna o histórico de faturas fechadas de um parceiro
+     */
+    getHistorico: async (req, res) => {
+        try {
+            const partnerId = req.params.id;
+            const user = req.user || {};
+            const isMaster = user.autoridade === 1 || user.perfil === 'master';
+
+            if (!isMaster && user.id && String(user.id) !== String(partnerId)) {
+                return res.status(403).json({ success: false, message: "Acesso restrito ao seu próprio histórico." });
+            }
+
+            const historico = await Faturamentos.findAll({
+                where: { id_franqueado: partnerId },
+                order: [['id', 'DESC']]
+            });
+
+            return res.json(historico);
+        } catch (err) {
+            console.error("Erro ao buscar histórico de faturas:", err);
+            return res.status(500).json({ error: "Erro interno ao buscar histórico." });
+        }
+    },
+
+    /**
+     * Fecha e registra oficialmente a fatura mensal na tabela oi_faturamentos
+     */
+    fecharFatura: async (req, res) => {
+        try {
+            const user = req.user || {};
+            const isMaster = user.autoridade === 1 || user.perfil === 'master';
+
+            const {
+                id_franqueado,
+                mes_referencia,
+                ano_referencia,
+                total_vidas_individual,
+                total_vidas_familiar,
+                total_vidas,
+                total_inativos_individual,
+                total_inativos_familiar,
+                detalhes_planos,
+                valor_individual,
+                valor_familiar,
+                valor_manutencao,
+                valor_total,
+                data_vencimento,
+                observacoes
+            } = req.body;
+
+            if (!id_franqueado || !mes_referencia || !ano_referencia) {
+                return res.status(400).json({ success: false, message: "Parceiro, mês e ano de referência são obrigatórios." });
+            }
+
+            if (!isMaster && user.id && String(user.id) !== String(id_franqueado)) {
+                return res.status(403).json({ success: false, message: "Não autorizado a fechar faturas para este parceiro." });
+            }
+
+            // Upsert: atualiza se já existir fatura para o mesmo parceiro e mês
+            const [fatura, created] = await Faturamentos.findOrCreate({
+                where: {
+                    id_franqueado: id_franqueado,
+                    mes_referencia: String(mes_referencia),
+                    ano_referencia: Number(ano_referencia)
+                },
+                defaults: {
+                    total_vidas_individual: total_vidas_individual || 0,
+                    total_vidas_familiar: total_vidas_familiar || 0,
+                    total_vidas: total_vidas || 0,
+                    total_inativos_individual: total_inativos_individual || 0,
+                    total_inativos_familiar: total_inativos_familiar || 0,
+                    detalhes_planos: typeof detalhes_planos === 'object' ? JSON.stringify(detalhes_planos) : detalhes_planos,
+                    valor_individual: valor_individual || 0,
+                    valor_familiar: valor_familiar || 0,
+                    valor_manutencao: valor_manutencao || 0,
+                    valor_total: valor_total || 0,
+                    data_vencimento: data_vencimento || null,
+                    observacoes: observacoes || null,
+                    status: 'pendente',
+                    fechado_por: user.nome || user.email || 'Sistema'
+                }
+            });
+
+            if (!created) {
+                await fatura.update({
+                    total_vidas_individual: total_vidas_individual || fatura.total_vidas_individual,
+                    total_vidas_familiar: total_vidas_familiar || fatura.total_vidas_familiar,
+                    total_vidas: total_vidas || fatura.total_vidas,
+                    total_inativos_individual: total_inativos_individual || fatura.total_inativos_individual,
+                    total_inativos_familiar: total_inativos_familiar || fatura.total_inativos_familiar,
+                    detalhes_planos: typeof detalhes_planos === 'object' ? JSON.stringify(detalhes_planos) : (detalhes_planos || fatura.detalhes_planos),
+                    valor_individual: valor_individual || fatura.valor_individual,
+                    valor_familiar: valor_familiar || fatura.valor_familiar,
+                    valor_manutencao: valor_manutencao || fatura.valor_manutencao,
+                    valor_total: valor_total || fatura.valor_total,
+                    data_vencimento: data_vencimento || fatura.data_vencimento,
+                    observacoes: observacoes !== undefined ? observacoes : fatura.observacoes,
+                    fechado_por: user.nome || user.email || fatura.fechado_por
+                });
+            }
+
+            return res.status(201).json({
+                success: true,
+                message: created ? "Fatura fechada com sucesso!" : "Fatura atualizada com sucesso!",
+                fatura: fatura
+            });
+
+        } catch (err) {
+            console.error("Erro ao fechar fatura:", err);
+            return res.status(500).json({ success: false, message: "Erro interno ao fechar fatura." });
+        }
+    },
+
+    /**
+     * Atualiza o status de pagamento de uma fatura fechada (Pendente, Pago, Cancelado)
+     */
+    atualizarStatus: async (req, res) => {
+        try {
+            const user = req.user || {};
+            const isMaster = user.autoridade === 1 || user.perfil === 'master';
+            if (!isMaster) {
+                return res.status(403).json({ success: false, message: "Apenas administradores master podem alterar o status de pagamento." });
+            }
+
+            const faturaId = req.params.id;
+            const { status, data_pagamento, observacoes } = req.body;
+
+            const fatura = await Faturamentos.findByPk(faturaId);
+            if (!fatura) {
+                return res.status(404).json({ success: false, message: "Fatura não encontrada." });
+            }
+
+            const updateData = {};
+            if (status) updateData.status = status;
+            if (data_pagamento !== undefined) updateData.data_pagamento = data_pagamento || null;
+            if (observacoes !== undefined) updateData.observacoes = observacoes;
+
+            if (status === 'pago' && !fatura.data_pagamento && !data_pagamento) {
+                updateData.data_pagamento = new Date();
+            }
+
+            await fatura.update(updateData);
+
+            return res.json({
+                success: true,
+                message: "Status da fatura atualizado com sucesso!",
+                fatura: fatura
             });
         } catch (err) {
-            console.log('erro', err);
-            res.json({ success: false, message: 'Erro ao calcular os valores.' });
+            console.error("Erro ao atualizar status da fatura:", err);
+            return res.status(500).json({ success: false, message: "Erro interno ao atualizar fatura." });
         }
+    },
 
+    /**
+     * Retorna os preços cadastrados na tabela oi_planos para o parceiro
+     */
+    getPlanos: async (req, res) => {
+        try {
+            const partnerId = req.params.id;
+            const planos = await Planos.findAll({
+                where: { id_franqueado: partnerId },
+                raw: true
+            });
 
+            // Retorna a lista existente ou modelo padrão preenchido
+            const precosFormatados = {
+                individual: {
+                    g: resolverPreco(planos, 'individual', 'g'),
+                    p: resolverPreco(planos, 'individual', 'p'),
+                    gp: resolverPreco(planos, 'individual', 'gp'),
+                    gs: resolverPreco(planos, 'individual', 'gs'),
+                    gsp: resolverPreco(planos, 'individual', 'gsp')
+                },
+                familiar: {
+                    g: resolverPreco(planos, 'familiar', 'g'),
+                    p: resolverPreco(planos, 'familiar', 'p'),
+                    gp: resolverPreco(planos, 'familiar', 'gp'),
+                    gs: resolverPreco(planos, 'familiar', 'gs'),
+                    gsp: resolverPreco(planos, 'familiar', 'gsp')
+                },
+                manutencao_mensal: resolverManutencao(planos),
+                customizado: planos.length > 0
+            };
 
+            return res.json(precosFormatados);
+        } catch (err) {
+            console.error("Erro ao obter planos do parceiro:", err);
+            return res.status(500).json({ error: "Erro interno ao obter planos." });
+        }
+    },
+
+    /**
+     * Salva ou atualiza a tabela de preços do parceiro em oi_planos
+     */
+    salvarPlanos: async (req, res) => {
+        try {
+            const user = req.user || {};
+            const isMaster = user.autoridade === 1 || user.perfil === 'master';
+            if (!isMaster) {
+                return res.status(403).json({ success: false, message: "Apenas administradores master podem alterar a tabela de preços." });
+            }
+
+            const partnerId = req.params.id;
+            const { individual, familiar, manutencao_mensal } = req.body;
+
+            const manutencao = !isNaN(Number(manutencao_mensal)) ? Number(manutencao_mensal) : 197.00;
+
+            const tipos = ['g', 'p', 'gp', 'gs', 'gsp'];
+            const itensParaSalvar = [];
+
+            if (individual) {
+                for (const t of tipos) {
+                    if (individual[t] !== undefined && !isNaN(Number(individual[t]))) {
+                        itensParaSalvar.push({
+                            plano: 'individual',
+                            tipo: t,
+                            valor: Number(individual[t]),
+                            manutencao_mensal: manutencao
+                        });
+                    }
+                }
+            }
+
+            if (familiar) {
+                for (const t of tipos) {
+                    if (familiar[t] !== undefined && !isNaN(Number(familiar[t]))) {
+                        itensParaSalvar.push({
+                            plano: 'familiar',
+                            tipo: t,
+                            valor: Number(familiar[t]),
+                            manutencao_mensal: manutencao
+                        });
+                    }
+                }
+            }
+
+            // Atualiza cada plano usando findOrCreate
+            for (const item of itensParaSalvar) {
+                const [registro, created] = await Planos.findOrCreate({
+                    where: {
+                        id_franqueado: partnerId,
+                        plano: item.plano,
+                        tipo: item.tipo
+                    },
+                    defaults: {
+                        valor: item.valor,
+                        manutencao_mensal: item.manutencao_mensal
+                    }
+                });
+
+                if (!created) {
+                    await registro.update({
+                        valor: item.valor,
+                        manutencao_mensal: item.manutencao_mensal
+                    });
+                }
+            }
+
+            return res.json({
+                success: true,
+                message: "Tabela de preços atualizada com sucesso!"
+            });
+
+        } catch (err) {
+            console.error("Erro ao salvar preços dos planos:", err);
+            return res.status(500).json({ success: false, message: "Erro interno ao salvar preços." });
+        }
+    },
+
+    /**
+     * Retorna a lista detalhada de vidas ativas e inativas faturadas para auditoria e conferência
+     */
+    getVidasAuditoria: async (req, res) => {
+        try {
+            const partnerId = req.params.id;
+            const user = req.user || {};
+            const isMaster = user.autoridade === 1 || user.perfil === 'master';
+
+            if (!isMaster && user.id && String(user.id) !== String(partnerId)) {
+                return res.status(403).json({ success: false, message: "Acesso restrito." });
+            }
+
+            const { cobertura, serviceType, situacao, search } = req.query;
+            const where = { id_franqueado: partnerId };
+
+            if (cobertura) where.cobertura = cobertura;
+            if (serviceType) where.serviceType = serviceType;
+            if (situacao) where.situacao = situacao;
+
+            if (search) {
+                where[Op.or] = [
+                    { nm_cliente: { [Op.like]: `%${search}%` } },
+                    { nu_documento: { [Op.like]: `%${search}%` } }
+                ];
+            }
+
+            const limit = parseInt(req.query.limit, 10) || 100;
+            const page = parseInt(req.query.page, 10) || 1;
+            const offset = (page - 1) * limit;
+
+            const { count, rows } = await Clientes.findAndCountAll({
+                where,
+                order: [['nm_cliente', 'ASC']],
+                limit,
+                offset,
+                attributes: ['id', 'nm_cliente', 'nu_documento', 'email', 'telefone', 'cobertura', 'serviceType', 'situacao', 'dtAtivacao', 'dtDesativacao', 'cpf_titular']
+            });
+
+            return res.json({
+                total: count,
+                page,
+                totalPages: Math.ceil(count / limit),
+                vidas: rows
+            });
+        } catch (err) {
+            console.error("Erro ao buscar vidas para auditoria:", err);
+            return res.status(500).json({ error: "Erro interno ao buscar vidas de auditoria." });
+        }
     }
-}
-
-
-
-
-
-const contagem = {
-    "3": 1,
-    "28235758": 1,
-    "45461210": 1,
-    "49622145": 1,
-    "82974789": 1,
-    "271421673": 1,
-    "278639135": 1,
-    "446180858": 1,
-    "447001647": 1,
-    "498210677": 1,
-    "591598639": 2,
-    "656859547": 1,
-    "781315379": 1,
-    "907173683": 1,
-    "1232041602": 2,
-    "1273013646": 1,
-    "1318339286": 1,
-    "1327424622": 3,
-    "1422250610": 1,
-    "1446446654": 1,
-    "1508099219": 1,
-    "1650366659": 1,
-    "1693842335": 1,
-    "1858768624": 1,
-    "1909314854": 1,
-    "1929772610": 1,
-    "1930743629": 1,
-    "1944972595": 1,
-    "1946022659": 1,
-    "2053597607": 1,
-    "2061143628": 1,
-    "2166614639": 1,
-    "2167876106": 1,
-    "2190758670": 1,
-    "2220599159": 1,
-    "2300410605": 1,
-    "2312647630": 1,
-    "2324359600": 1,
-    "2329066708": 1,
-    "2426800623": 1,
-    "2529474524": 1,
-    "2609404611": 1,
-    "2747242358": 3,
-    "2767786264": 1,
-    "2988036152": 1,
-    "3114985661": 2,
-    "3138363709": 1,
-    "3187111920": 1,
-    "3340345155": 1,
-    "3342698578": 1,
-    "3377811508": 1,
-    "3410172130": 1,
-    "3609108150": 1,
-    "3697657291": 1,
-    "3771876150": 1,
-    "3779834545": 1,
-    "3865351247": 1,
-    "3870523301": 1,
-    "3899913094": 1,
-    "3977720503": 1,
-    "7417681603": 3,
-    "4354788934": 1,
-    "87944219949": 1,
-    "9769253626": 1,
-    "11829720635": 3,
-    "8974509652": 1,
-    "7932485665": 1,
-    "63361280672": 1,
-    "6692283620": 1,
-    "7458769602": 1,
-    "12565320612": 2,
-    "7874627644": 1,
-    "14380006697": 1,
-    "9161990612": 1,
-    "10807665614": 1,
-    "8982498648": 1,
-    "70710791100": 1,
-    "8124522677": 1,
-    "7182218348": 2,
-    "16958583604": 1,
-    "7182188333": 1,
-    "9438145885": 1,
-    "11069680699": 1,
-    "9937758610": 1,
-    "13188883609": 1,
-    "12035849624": 2,
-    "8285488624": 1,
-    "11472414659": 1,
-    "5881150619": 1,
-    "12254021664": 1,
-    "9085132673": 1,
-    "8184630662": 1,
-    "7950350636": 2,
-    "8549280658": 1,
-    "11480805629": 1,
-    "14006556683": 1,
-    "5491106666": 1,
-    "16704954694": 2,
-    "8979760612": 1,
-    "16363765684": 3,
-    "6849514601": 1,
-    "4980854656": 1,
-    "14111850642": 3,
-    "7425004623": 1,
-    "7349833601": 1,
-    "10808055674": 3,
-    "8055908621": 1,
-    "7574294674": 1,
-    "17265820606": 1,
-    "8157964636": 1,
-    "13401474677": 1,
-    "9500084600": 2,
-    "7372053692": 2,
-    "9636642630": 1,
-    "8202835682": 1,
-    "13477414616": 1,
-    "13647560642": 1,
-    "18104673220": 1,
-    "7418413203": 1,
-    "7898457331": 1,
-    "5541150345": 1,
-    "9099084358": 1,
-    "4329376172": 1,
-    "51700450182": 1,
-    "6891216362": 1,
-    "79983391368": 1,
-    "5574151286": 1,
-    "5614526528": 1,
-    "4606231840": 1,
-    "68359462453": 1,
-    "5402541698": 1,
-    "6076299673": 1,
-    "4309552196": 1,
-    "6885434566": 1,
-    "5784370588": 1,
-    "5125764590": 1,
-    "8781597460": 1,
-    "4889133658": 1,
-    "5204691359": 1,
-    "12720699667": 1,
-    "5499922195": 1,
-    "6390379846": 1,
-    "4548814108": 1,
-    "5681629198": 1,
-    "6087136193": 1,
-    "7428605660": 2,
-    "7318177028": 1,
-    "7440965884": 1,
-    "5034153912": 1,
-    "5921249670": 1,
-    "5339704661": 1,
-    "10599055669": 1,
-    "8051322878": 1,
-    "7458849541": 1,
-    "7562886571": 1,
-    "8705510511": 1,
-    "17112001072": 1,
-    "8690937463": 1,
-    "6345397369": 1,
-    "82302871391": 2,
-    "6968091330": 1,
-    "6671480354": 1,
-    "7690965814": 2,
-    "7989275856": 1,
-    "8773379859": 1,
-    "8242736642": 1,
-    "6979170619": 1,
-    "5130236661": 1,
-    "9289047844": 1,
-    "6201467610": 1,
-    "8249107969": 1,
-}
-
-let csv = 'cpf,status\n';
-
-for (const cpf in contagem) {
-    const status = contagem[cpf] > 1 ? 'familiar' : 'individual';
-    csv += `${cpf},${status}\n`;
-}
-
-const fs = require('fs');
-//fs.writeFileSync('resultado.csv', csv);
+};

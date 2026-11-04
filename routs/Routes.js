@@ -3123,6 +3123,14 @@ router.post('/conectamed/notification', yampi.webhook);
 //FATURAMENTO
 router.get('/list/parceiros', faturamento.listParceiros);
 router.get('/list/clientes/:id', faturamento.listDados);
+router.get('/faturamento/parceiros', faturamento.listParceiros);
+router.get('/faturamento/dados/:id', faturamento.listDados);
+router.get('/faturamento/historico/:id', faturamento.getHistorico);
+router.post('/faturamento/fechar', faturamento.fecharFatura);
+router.patch('/faturamento/:id/status', faturamento.atualizarStatus);
+router.get('/faturamento/planos/:id', faturamento.getPlanos);
+router.put('/faturamento/planos/:id', faturamento.salvarPlanos);
+router.get('/faturamento/vidas/:id', faturamento.getVidasAuditoria);
 
 
 
