@@ -2584,50 +2584,108 @@ router.delete('/beneficiaries/:cpf', async (req, res) => {
 
 //reativar vida
 router.put('/beneficiaries/reactivate/:cpf', async (req, res) => {
-  const cpfinformed = req.params.cpf;
+  const cpfinformed = String(req.params.cpf || '').replace(/\D/g, '');
 
-  const idFranqueado = await Clientes.findOne({
+  const cliente = await Clientes.findOne({
     where: {
-      nu_documento: cpfinformed
+      [Op.or]: [
+        { nu_documento: cpfinformed },
+        { nu_documento: req.params.cpf }
+      ]
     },
     raw: true
   });
 
-  if (idFranqueado.id_franqueado == 26) {
+  if (cliente && cliente.id_franqueado == 26) {
     try {
       await AtivaUsuarioAlloyal(cpfinformed);
     } catch (err) {
-      console.log("erro reativar aloyal 1660", err.message)
+      console.log("erro reativar aloyal:", err.message);
     }
   }
 
-
   try {
+    let uuid = null;
 
+    // 1. Tenta buscar da tabela Rapidoc
     const uuidGet = await Rapidoc.findAll({
       where: {
         cpf: cpfinformed
       }
-    })
+    });
 
-    console.log(uuidGet, cpfinformed)
-    const uuid = uuidGet[0].uuid;
+    if (uuidGet && uuidGet.length > 0 && uuidGet[0].uuid) {
+      uuid = uuidGet[0].uuid;
+    }
+
+    // 2. Tenta buscar da tabela Clientes
+    if (!uuid && cliente && cliente.uuid) {
+      uuid = cliente.uuid;
+    }
+
+    // 3. Tenta buscar da tabela Sleeping
+    if (!uuid) {
+      const sleeping = await Sleeping.findOne({
+        where: { idVida: cpfinformed },
+        raw: true
+      });
+      if (sleeping && sleeping.uuid) {
+        uuid = sleeping.uuid;
+      }
+    }
+
+    // 4. Se ainda não achou, consulta a API da Rapidoc pelo CPF
+    if (!uuid) {
+      try {
+        const responseRapidoc = await axios.get(`https://api.rapidoc.tech/tema/api/beneficiaries/${cpfinformed}`, {
+          headers: {
+            'clientId': process.env.CLIENT_ID || '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
+            'Authorization': process.env.AUTHORIZATION || 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
+            'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
+          }
+        });
+        if (responseRapidoc.data && responseRapidoc.data.beneficiary && responseRapidoc.data.beneficiary.uuid) {
+          uuid = responseRapidoc.data.beneficiary.uuid;
+        }
+      } catch (errApi) {
+        console.warn("Beneficiário não localizado por GET na Rapidoc:", errApi.response?.data || errApi.message);
+      }
+    }
+
+    if (!uuid) {
+      return res.status(404).json({ success: false, message: "UUID do beneficiário não localizado para reativação." });
+    }
+
+    // Grava UUID encontrado para consultas futuras
+    await Clientes.update({ uuid }, { where: { nu_documento: cpfinformed } }).catch(() => {});
+    await Rapidoc.findOrCreate({
+      where: { cpf: cpfinformed },
+      defaults: { cpf: cpfinformed, uuid }
+    }).catch(() => {});
+
+    // Remove do sleeping caso esteja
+    await Sleeping.destroy({
+      where: {
+        [Op.or]: [
+          { idVida: cpfinformed },
+          { uuid: uuid }
+        ]
+      }
+    }).catch(() => {});
+
+    // Chama rota de reativação da Rapidoc
     const retorno = await axios.put(`https://api.rapidoc.tech/tema/api/beneficiaries/${uuid}/reactivate`, "data", {
       headers: {
-        'clientId': '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
-        'Authorization': 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
+        'clientId': process.env.CLIENT_ID || '5fac4f05-0b92-450f-ad4a-ccd9b3ffce32',
+        'Authorization': process.env.AUTHORIZATION || 'Bearer eyJhbGciOiJSUzUxMiJ9.eyJjbGllbnQiOiJXLlNPQVJFUyJ9.M3pdugJ8KoD-f-vaOUAeUjvq747cBqR1woeVAUFBqit8qUVvxdMVU9rf3TsVmuUxwBhPFgzU8drUnHlAEdkvF-GBclD_38lUYAUZBBQVqN3VCGcEjX1NRoNQ-Hsl4lxgics6DmNau05OqXE28066fKFWm9WLxpt_Xdj26O91tAde5XJxglq_9v__2A1DFdcUWfNZtAL_WD7kRVTO8XWhOBe9Eu_bbDL_OHGEnmbFEkxCPZ4K7gQk_zRRUr_5lQahNrTp7MnIL7bvydbRvfi5xTyLxuO1ZlzYH_GEy6y9EpyXAuYrOr2mdxJFD3PzkTwRqjKgxUKjXQv3r7924afogiAvNj4paOtiahS3LRqsfn4ywvHRA3zYIknmKsJfpOBy2Cp7o7OeHWV_QuRaVvplXjvLOtv9ptgVvguGtupZvOd7B8Q8rFIrx95FlKIZjbxnqPLiG8oYdz5UOMUpuVosEIuT4lxgCxYUdJOfZzMN82MsPYelezvmrqLnO_TATWuWmWOAvBUxdw72zm6ddlj3WjMmadEJI6lJ8nDQRMOBx32uPImv-oRYd0upQyX0bciWZGblSGh7jRfmwLlUN0XVn4zdiLI9j0IsYzcuNjeLil_y29rUyvZZvmaTl0RCKQNpdarpf4bzJbJUSV_4_pjnuNMT0GczFkdZE_cPmQ_rUCo',
         'Content-Type': 'application/vnd.rapidoc.tema-v2+json'
       }
     });
 
-    if (retorno.data.success === true) {
-      res.json(retorno.data)
-    } else {
-      res.json(retorno.data)
-    }
+    return res.json(retorno.data);
   } catch (err) {
-    console.log("caminho do erro: Routes.js linha 1679 reativação")
-    console.log("erro do reactivate: ", err)
+    console.error("Erro na reativação na Rapidoc:", err.response?.data || err.message);
+    return res.status(400).json({ success: false, message: err.response?.data?.message || err.message });
   }
 });
 
