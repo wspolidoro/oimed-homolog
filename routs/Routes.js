@@ -1964,13 +1964,14 @@ const SUBCLIENT_SAFE_ATTRIBUTES = [
 //buscar lista de clientes para agendamento
 router.post('/franqueado/clientes/list/agenda', async (req, res) => {
   const isAdmin = req.user && (req.user.autoridade === 1 || req.user.perfil === 'master');
-  // Se não for admin, força estritamente o id autenticado no token!
-  const targetId = isAdmin ? (req.body.id || req.user.id) : req.user.id;
+  const isFilterAll = !req.body.id || req.body.id === 'todos' || req.body.id === 'all' || req.body.id === 'null' || req.body.id === 'undefined';
+  const targetId = isAdmin ? (isFilterAll ? null : req.body.id) : req.user.id;
+  const whereCondition = targetId ? { id_franqueado: targetId } : {};
 
   if (req.body.subpainel && req.query.subList !== "null") {
-    const nmClientes = await Clientes.findAll({
-      attributes: CLIENT_SAFE_ATTRIBUTES,
-      where: { id_franqueado: targetId }
+    const nmClientes = await SubClientes.findAll({
+      attributes: SUBCLIENT_SAFE_ATTRIBUTES,
+      where: whereCondition
     });
 
     return res.json({ success: true, message: nmClientes });
@@ -1978,7 +1979,24 @@ router.post('/franqueado/clientes/list/agenda', async (req, res) => {
 
   const nmClientes = await Clientes.findAll({
     attributes: CLIENT_SAFE_ATTRIBUTES,
-    where: { id_franqueado: targetId }
+    where: whereCondition,
+    include: [
+      {
+        model: Franqueado,
+        attributes: ['id', 'nome'],
+        required: false
+      },
+      {
+        model: Sleeping,
+        required: false,
+        attributes: ['id', 'idVida', 'uuid']
+      }
+    ],
+    order: [
+      [literal(`COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento)`), 'ASC'],
+      [literal(`CASE WHEN cpf_titular = 'titular' THEN 0 ELSE 1 END`), 'ASC'],
+      ['nu_documento', 'ASC']
+    ]
   });
 
   return res.json({ success: true, message: nmClientes });
@@ -1987,50 +2005,43 @@ router.post('/franqueado/clientes/list/agenda', async (req, res) => {
 //buscar lista de clientes
 router.post('/franqueado/clientes/list', async (req, res) => {
   const isAdmin = req.user && (req.user.autoridade === 1 || req.user.perfil === 'master');
-  // SEGURANÇA: Se não for admin, NUNCA confia em req.body.id ou req.body.perfil!
-  // Força estritamente o ID do usuário que consta no token JWT assinado criptograficamente.
-  const targetId = isAdmin ? (req.body.id || null) : req.user.id;
+  // Se for admin, pode escolher um parceiro específico OU listar todos ('todos', 'all', ou null/vazio)
+  const isFilterAll = !req.body.id || req.body.id === 'todos' || req.body.id === 'all' || req.body.id === 'null' || req.body.id === 'undefined';
+  const targetId = isAdmin ? (isFilterAll ? null : req.body.id) : req.user.id;
+  const whereCondition = targetId ? { id_franqueado: targetId } : {};
 
   if (req.body.subpainel && req.query.subList !== "null") {
     const nmClientes = await SubClientes.findAll({
       attributes: SUBCLIENT_SAFE_ATTRIBUTES,
-      where: { id_franqueado: targetId }
+      where: whereCondition
     });
 
     return res.json({ success: true, message: nmClientes });
-  } else if (!isAdmin || targetId) {
-    // Parceiro comum OU Admin consultando um parceiro específico:
-    const nmClientes = await Clientes.findAll({
-      attributes: CLIENT_SAFE_ATTRIBUTES,
-      where: {
-        id_franqueado: targetId
-      },
-      include: [{
-        model: Sleeping,
-        required: false,
-        attributes: ['id', 'idVida', 'uuid']
-      }],
-      order: [
-        [literal(`COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento)`), 'ASC'],
-        [literal(`CASE WHEN cpf_titular = 'titular' THEN 0 ELSE 1 END`), 'ASC'],
-        ['nu_documento', 'ASC']
-      ]
-    });
-
-    return res.send(nmClientes);
-  } else {
-    // Apenas Administrador Master sem filtro pode ver a base geral:
-    const Cliente = await Clientes.findAll({
-      attributes: CLIENT_SAFE_ATTRIBUTES,
-      include: [{
-        model: Sleeping,
-        required: false,
-        attributes: ['id', 'idVida', 'uuid']
-      }]
-    });
-
-    return res.json(Cliente);
   }
+
+  const nmClientes = await Clientes.findAll({
+    attributes: CLIENT_SAFE_ATTRIBUTES,
+    where: whereCondition,
+    include: [
+      {
+        model: Franqueado,
+        attributes: ['id', 'nome'],
+        required: false
+      },
+      {
+        model: Sleeping,
+        required: false,
+        attributes: ['id', 'idVida', 'uuid']
+      }
+    ],
+    order: [
+      [literal(`COALESCE(NULLIF(cpf_titular, 'titular'), nu_documento)`), 'ASC'],
+      [literal(`CASE WHEN cpf_titular = 'titular' THEN 0 ELSE 1 END`), 'ASC'],
+      ['nu_documento', 'ASC']
+    ]
+  });
+
+  return res.json(nmClientes);
 });
 
 //atualizar franqueados
