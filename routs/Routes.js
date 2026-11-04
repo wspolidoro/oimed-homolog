@@ -1056,125 +1056,220 @@ router.post('/franqueado/clientes', async (req, res) => {
   }
 });
 
-//rota de testes para atualizar dados de clientes
+// Rota para atualizar dados de clientes e seus dependentes
 router.put('/franqueado/clientes/update', async (req, res) => {
   try {
+    console.log("Atualização de cliente - body recebido:", req.body);
 
+    const cpfNumber = req.body.nu_documento ? String(req.body.nu_documento).replace(/\D/g, "") : "";
+    const cpfOriginal = req.body.documento_original ? String(req.body.documento_original).replace(/\D/g, "") : cpfNumber;
 
-    console.log("request de atualização", req.body);
+    if (!cpfNumber || cpfNumber.length !== 11) {
+      return res.status(400).json({ success: false, message: "CPF inválido (deve conter 11 dígitos numéricos)." });
+    }
 
+    const planoCobertura = String(req.body.cobertura || 'individual').toLowerCase().trim();
+    const isFamiliar = planoCobertura === 'familiar';
 
-    var cpfNumber = req.body.nu_documento;
-    var numericCpfNumber = cpfNumber.replace(/\D/g, "");
+    // Formatar telefone
+    const formatarTelefone = (numero) => {
+      if (!numero) return '00000000000';
+      const limpo = String(numero).replace(/\D/g, '').replace(/^55/, '');
+      return limpo.length >= 8 ? limpo : '00000000000';
+    };
 
-    var cpfOriginal = req.body.documento_original;
-    var numericCpfOriginal = cpfOriginal.replace(/\D/g, "");
+    const idFranqueadoFinal = req.body.id_franqueado || req.body.idParceiro || req.user?.id;
 
-    //console.log(numericCpfNumber);
+    const defaultZipCode = (req.body.zip_code && String(req.body.zip_code).trim() !== '') ? String(req.body.zip_code).replace(/\D/g, "") : '00000000';
+    const defaultAddress = (req.body.address && String(req.body.address).trim() !== '') ? String(req.body.address).trim() : 'Não informado';
+    const defaultCity = (req.body.city && String(req.body.city).trim() !== '') ? String(req.body.city).trim() : 'Não informada';
+    const defaultState = (req.body.state && String(req.body.state).trim() !== '') ? String(req.body.state).trim().toUpperCase() : 'SP';
+    const defaultBirthday = (req.body.birthday && String(req.body.birthday).trim() !== '') ? String(req.body.birthday).trim() : '01/01/2000';
+    const defaultEmail = (req.body.email && String(req.body.email).trim() !== '') ? String(req.body.email).trim() : 'sem-email@oimed.com.br';
+    const defaultPaymentType = (req.body.paymentType && String(req.body.paymentType).trim() !== '') ? String(req.body.paymentType).trim() : 'S';
+    const defaultServiceType = (req.body.serviceType && String(req.body.serviceType).trim() !== '') ? String(req.body.serviceType).trim() : 'GSP';
+    const defaultLink = (req.body.link && String(req.body.link).trim() !== '') ? String(req.body.link).trim() : 'default';
+
+    // Normalizar dependentes recebidos (se plano familiar)
+    let rawBeneficiarios = req.body.beneficiarios || req.body.dependentes || [];
+    if (typeof rawBeneficiarios === 'string') {
+      try {
+        rawBeneficiarios = JSON.parse(rawBeneficiarios);
+        if (typeof rawBeneficiarios === 'string') rawBeneficiarios = JSON.parse(rawBeneficiarios);
+      } catch {
+        rawBeneficiarios = [];
+      }
+    }
+    if (!Array.isArray(rawBeneficiarios)) {
+      rawBeneficiarios = [];
+    }
+
+    const dependentesValidos = [];
+    if (isFamiliar) {
+      for (let i = 0; i < rawBeneficiarios.length && dependentesValidos.length < 3; i++) {
+        const item = rawBeneficiarios[i];
+        if (!item) continue;
+        const idx = i + 1;
+
+        const nome = String(item.nm_cliente || item[`nm_cliente${idx}`] || '').trim();
+        const cpf = String(item.nu_documento || item.cpf || item[`nu_documento${idx}`] || '').replace(/\D/g, "");
+
+        if (!nome && !cpf) continue;
+
+        if (!nome) {
+          return res.status(400).json({ success: false, message: `O Dependente 0${idx} precisa ter um nome preenchido.` });
+        }
+        if (!cpf || cpf.length !== 11) {
+          return res.status(400).json({ success: false, message: `CPF inválido para o Dependente 0${idx} (${nome}). Deve conter 11 dígitos.` });
+        }
+        if (cpf === cpfNumber) {
+          return res.status(400).json({ success: false, message: `O CPF do Dependente 0${idx} (${nome}) não pode ser idêntico ao CPF do titular.` });
+        }
+        if (dependentesValidos.some(d => d.nu_documento === cpf)) {
+          return res.status(400).json({ success: false, message: `O CPF ${cpf} foi inserido mais de uma vez entre os dependentes.` });
+        }
+
+        dependentesValidos.push({
+          nm_cliente: nome,
+          nu_documento: cpf,
+          birthday: String(item.birthday || item[`birthday${idx}`] || defaultBirthday).trim(),
+          telefone: formatarTelefone(item.telefone || item[`telefone${idx}`] || req.body.telefone),
+          email: String(item.email || item[`email${idx}`] || defaultEmail).trim(),
+          zip_code: String(item.zip_code || item.zipCode || item[`zipCode${idx}`] || defaultZipCode).replace(/\D/g, ""),
+          address: String(item.address || item[`address${idx}`] || defaultAddress).trim(),
+          city: String(item.city || item[`city${idx}`] || defaultCity).trim(),
+          state: String(item.state || item[`state${idx}`] || defaultState).trim().toUpperCase(),
+        });
+      }
+    }
+
+    // Montar o JSON de beneficiários no formato padrão do sistema (3 slots)
+    const beneficiariosJsonArray = [
+      {
+        nm_cliente1: dependentesValidos[0]?.nm_cliente || null,
+        nu_documento1: dependentesValidos[0]?.nu_documento || null,
+        birthday1: dependentesValidos[0]?.birthday || null,
+        email1: dependentesValidos[0]?.email || null,
+        telefone1: dependentesValidos[0]?.telefone || null,
+        zipCode1: dependentesValidos[0]?.zip_code || null,
+        address1: dependentesValidos[0]?.address || null,
+        city1: dependentesValidos[0]?.city || null,
+        state1: dependentesValidos[0]?.state || null,
+      },
+      {
+        nm_cliente2: dependentesValidos[1]?.nm_cliente || null,
+        nu_documento2: dependentesValidos[1]?.nu_documento || null,
+        birthday2: dependentesValidos[1]?.birthday || null,
+        email2: dependentesValidos[1]?.email || null,
+        telefone2: dependentesValidos[1]?.telefone || null,
+        zipCode2: dependentesValidos[1]?.zip_code || null,
+        address2: dependentesValidos[1]?.address || null,
+        city2: dependentesValidos[1]?.city || null,
+        state2: dependentesValidos[1]?.state || null,
+      },
+      {
+        nm_cliente3: dependentesValidos[2]?.nm_cliente || null,
+        nu_documento3: dependentesValidos[2]?.nu_documento || null,
+        birthday3: dependentesValidos[2]?.birthday || null,
+        email3: dependentesValidos[2]?.email || null,
+        telefone3: dependentesValidos[2]?.telefone || null,
+        zipCode3: dependentesValidos[2]?.zip_code || null,
+        address3: dependentesValidos[2]?.address || null,
+        city3: dependentesValidos[2]?.city || null,
+        state3: dependentesValidos[2]?.state || null,
+      }
+    ];
 
     const updateData = {
       nm_cliente: req.body.nm_cliente ? String(req.body.nm_cliente).trim() : undefined,
-      nu_documento: numericCpfNumber,
-      birthday: req.body.birthday || undefined,
-      telefone: req.body.telefone || undefined,
-      email: req.body.email || undefined,
-      zip_code: (req.body.zip_code && String(req.body.zip_code).trim()) ? String(req.body.zip_code).trim() : '00000000',
-      address: (req.body.address && String(req.body.address).trim()) ? String(req.body.address).trim() : 'Não informado',
-      city: (req.body.city && String(req.body.city).trim()) ? String(req.body.city).trim() : 'Não informada',
-      state: (req.body.state && String(req.body.state).trim()) ? String(req.body.state).trim() : 'SP',
-      paymentType: req.body.paymentType || 'S',
-      serviceType: req.body.serviceType || 'GSP',
-      link: req.body.link || 'default',
+      nu_documento: cpfNumber,
+      birthday: defaultBirthday,
+      telefone: formatarTelefone(req.body.telefone),
+      email: defaultEmail,
+      zip_code: defaultZipCode,
+      address: defaultAddress,
+      city: defaultCity,
+      state: defaultState,
+      paymentType: defaultPaymentType,
+      serviceType: defaultServiceType,
+      cobertura: planoCobertura,
+      link: defaultLink,
+      beneficiarios: JSON.stringify(beneficiariosJsonArray),
     };
 
-    if (req.body.id_franqueado || req.body.idParceiro || req.user?.id) {
-      updateData.id_franqueado = String(req.body.id_franqueado || req.body.idParceiro || req.user?.id);
+    if (idFranqueadoFinal) {
+      updateData.id_franqueado = String(idFranqueadoFinal);
     }
 
-    if (req.body.beneficiarios !== undefined) {
-      updateData.beneficiarios = typeof req.body.beneficiarios === 'string'
-        ? req.body.beneficiarios
-        : JSON.stringify(req.body.beneficiarios);
-    }
-
-    // Remove chaves undefined para não tentar sobrescrever com null
+    // Remove chaves undefined
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
-    const newCliente = await Clientes.update(updateData, {
+    // Atualizar titular
+    await Clientes.update(updateData, {
       where: {
         [Op.or]: [
-          { nu_documento: numericCpfOriginal },
           { nu_documento: cpfOriginal },
           { nu_documento: cpfNumber },
-          { nu_documento: numericCpfNumber },
         ]
       }
     });
 
-
-
-    // console.log("mycliente", numericCpfNumber)
-
-    try {
-      const selectCobertura = await Clientes.update({
-        cobertura: req.body.cobertura,
-      }, {
-        where: {
-          [Op.or]: [
-            { nu_documento: numericCpfNumber },
-            { cpf_titular: numericCpfNumber }
-          ]
-        }
+    // Se o CPF do titular mudou, atualizar referências nos dependentes existentes
+    if (cpfOriginal && cpfOriginal !== cpfNumber) {
+      await Clientes.update({ cpf_titular: cpfNumber }, {
+        where: { cpf_titular: cpfOriginal }
       });
-      await criarDependenteGeral();
-    } catch (err) {
-      console.log("Erro ao atualizar cliente:", err);
     }
 
+    // Sincronizar dependentes
+    const cpfsTitularFiltro = [cpfOriginal, cpfNumber].filter(Boolean);
 
+    if (isFamiliar) {
+      const dependentesCpfs = dependentesValidos.map(d => d.nu_documento);
 
-    async function criarDependenteGeral() {
-      const arrayDefault = '[{"nm_cliente1":null,"nu_documento1":null,"birthday1":null,"email1":null,"telefone1":null,"zipCode1":null,"address1":null,"city1":null,"state1":null},{"nm_cliente2":null,"nu_documento2":null,"birthday2":null,"email2":null,"telefone2":null,"zipCode2":null,"address2":null,"city2":null,"state2":null},{"nm_cliente3":null,"nu_documento3":null,"birthday3":null,"email3":null,"telefone3":null,"zipCode3":null,"address3":null,"city3":null,"state3":null}]';
+      // 1. Remover dependentes vinculados ao titular que não estão mais na lista enviada
+      await Clientes.destroy({
+        where: {
+          cpf_titular: { [Op.in]: cpfsTitularFiltro },
+          nu_documento: { [Op.notIn]: dependentesCpfs.length > 0 ? dependentesCpfs : ['__none__'] }
+        }
+      });
 
-      let userExiste = false;
-
-      const beneficiariosList = Array.isArray(req.body.beneficiarios) ? req.body.beneficiarios : [];
-      for (let i = 0; i < beneficiariosList.length; i++) {
-        const beneficiario = beneficiariosList[i];
-        if (!beneficiario) continue;
-        const contador = i + 1;
-
-        const cpf = beneficiario["nu_documento" + contador];
-
-        if (!cpf) continue;
-
-        const numericCpfNumber = cpf.replace(/\D/g, "");
-
-        const existingCliente = await Clientes.findOne({
-          where: { nu_documento: numericCpfNumber }
+      // 2. Atualizar ou criar cada dependente válido
+      const arrayDefault = JSON.stringify(beneficiariosJsonArray);
+      for (const dep of dependentesValidos) {
+        const existingDep = await Clientes.findOne({
+          where: { nu_documento: dep.nu_documento }
         });
 
-        // 🚨 Se já existir, retorna imediatamente
-        if (existingCliente) {
-          continue;
-          /*        return res.status(200).json({
-                   success: false,
-                   message: `Cliente com CPF ${numericCpfNumber} já cadastrado`
-                 }); */
-        }
-
-        if (beneficiario["nm_cliente" + contador]) {
-
+        if (existingDep) {
+          await Clientes.update({
+            nm_cliente: dep.nm_cliente,
+            birthday: dep.birthday,
+            telefone: dep.telefone,
+            email: dep.email,
+            zip_code: dep.zip_code,
+            address: dep.address,
+            city: dep.city,
+            state: dep.state,
+            paymentType: defaultPaymentType,
+            serviceType: defaultServiceType,
+            cobertura: 'familiar',
+            cpf_titular: cpfNumber,
+          }, {
+            where: { nu_documento: dep.nu_documento }
+          });
+        } else {
           await Clientes.create({
-            nm_cliente: beneficiario["nm_cliente" + contador],
-            nu_documento: numericCpfNumber,
-            birthday: beneficiario["birthday" + contador],
-            telefone: beneficiario["telefone" + contador],
-            email: beneficiario["email" + contador],
-            zip_code: beneficiario["zipCode" + contador],
-            address: beneficiario["address" + contador],
-            city: beneficiario["city" + contador],
-            state: beneficiario["state" + contador],
+            nm_cliente: dep.nm_cliente,
+            nu_documento: dep.nu_documento,
+            birthday: dep.birthday,
+            telefone: dep.telefone,
+            email: dep.email,
+            zip_code: dep.zip_code,
+            address: dep.address,
+            city: dep.city,
+            state: dep.state,
             dt_venda: "default",
             situacao: "Pendente",
             nu_parcelas: "default",
@@ -1183,142 +1278,36 @@ router.put('/franqueado/clientes/update', async (req, res) => {
             dt_vencimento: "default",
             dt_pagamento: "default",
             par_atual: "default",
-            paymentType: req.body.paymentType,
-            serviceType: req.body.serviceType,
-            cobertura: req.body.cobertura,
+            paymentType: defaultPaymentType,
+            serviceType: defaultServiceType,
+            cobertura: 'familiar',
             link: "default",
             beneficiarios: arrayDefault,
-            id_franqueado: req.body.id_franqueado,
-            cpf_titular: req.body.nu_documento
+            id_franqueado: idFranqueadoFinal || '0',
+            cpf_titular: cpfNumber
           });
-
         }
       }
-
-      return res.json({
-        success: true,
-        message: "Atualizado com sucesso"
+    } else {
+      // Plano Individual: remover dependentes que estavam vinculados a este titular
+      await Clientes.destroy({
+        where: {
+          cpf_titular: { [Op.in]: cpfsTitularFiltro }
+        }
       });
+    }
 
-
-      // if (newCliente) {
-      /*  let userExiste = false;
- 
-       req.body.beneficiarios.map(async (beneficiario, i) => {
-         var contador = i + 1;
- 
-         if (!beneficiario["nu_documento" + contador]) {
-           console.log("debug: ", beneficiario["nu_documento" + contador])
-           return;
-         }
- 
-         var cpfNumber = beneficiario["nu_documento" + contador];
-         var numericCpfNumber = cpfNumber.replace(/\D/g, "");
- 
-         const existingCliente = await Clientes.findOne({
-           where: {
-             nu_documento: numericCpfNumber
-           }
-         });
- 
-         if (existingCliente) {
-           userExiste = true;
-           return;
-           //return res.status(400).json({ success: false, message: "Cliente já cadastrado" });
-         }
- 
- 
-         if (beneficiario["nm_cliente" + contador] != null) {
-           try {
-             const newBeneficiario = await Clientes.create({
-               nm_cliente: beneficiario["nm_cliente" + contador],
-               nu_documento: beneficiario["nu_documento" + contador],
-               birthday: beneficiario["birthday" + contador],
-               telefone: beneficiario["telefone" + contador],
-               email: beneficiario["email" + contador],
-               zip_code: beneficiario["zipCode" + contador],
-               address: beneficiario["address" + contador],
-               city: beneficiario["city" + contador],
-               state: beneficiario["state" + contador],
-               dt_venda: "default",
-               situacao: "Pendente",
-               nu_parcelas: "default",
-               vl_venda: "default",
-               dt_cobranca: "default",
-               dt_vencimento: "default",
-               dt_pagamento: "default",
-               par_atual: "default",
-               paymentType: req.body.paymentType,
-               serviceType: req.body.serviceType,
-               cobertura: req.body.cobertura,
-               link: "default",
-               beneficiarios: arrayDefault,
-               id_franqueado: req.body.id_franqueado,
-               cpf_titular: req.body.nu_documento
-             }, {
-               where: {
-                 nu_documento: beneficiario["nu_documento" + contador]
-               }
-             });
-           } catch (err) {
-             const newBeneficiario = await Clientes.update({
-               nm_cliente: beneficiario["nm_cliente" + contador],
-               nu_documento: beneficiario["nu_documento" + contador],
-               birthday: beneficiario["birthday" + contador],
-               telefone: beneficiario["telefone" + contador],
-               email: beneficiario["email" + contador],
-               zip_code: beneficiario["zipCode" + contador],
-               address: beneficiario["address" + contador],
-               city: beneficiario["city" + contador],
-               state: beneficiario["state" + contador],
-               dt_venda: "default",
-               //situacao: "Pendente",
-               nu_parcelas: "default",
-               vl_venda: "default",
-               dt_cobranca: "default",
-               dt_vencimento: "default",
-               dt_pagamento: "default",
-               par_atual: "default",
-               paymentType: req.body.paymentType,
-               serviceType: req.body.serviceType,
-               cobertura: req.body.cobertura,
-               link: "default",
-               beneficiarios: arrayDefault,
-               id_franqueado: req.body.id_franqueado,
-               cpf_titular: req.body.nu_documento
-             }, {
-               where: {
-                 nu_documento: beneficiario["nu_documento" + contador]
-               }
-             });
-           }
- 
-         }
- 
-       });
- 
-       if (userExiste) {
-         console.log(userExiste)
-         return res.status(400).json({ success: false, message: "Cliente já cadastrado" });
-       } else {
-         res.json({ success: true, message: "atualizado com sucesso" });
- 
-       } */
-
-      //}
-    };
-
-
-
-
-    //res.json(newCliente);
-
+    return res.json({
+      success: true,
+      message: "Dados do cliente e plano atualizados com sucesso!"
+    });
   } catch (err) {
-    res.status(400)
-    res.json(err)
-    console.log(err)
+    console.error("Erro ao atualizar cliente:", err);
+    return res.status(400).json({
+      success: false,
+      message: err.message || "Erro ao atualizar dados do cliente."
+    });
   }
-
 });
 
 //mudar isso de lugar, temporario
