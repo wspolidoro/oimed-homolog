@@ -79,7 +79,7 @@ module.exports = {
 
             const parceiros = await Franqueado.findAll({
                 where,
-                order: [['nome', 'ASC']],
+                order: [['id', 'ASC']],
                 attributes: ['id', 'nome', 'cpf', 'status', 'precoIndividual', 'precoFamiliar', 'perfil']
             });
 

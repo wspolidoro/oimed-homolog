@@ -1968,7 +1968,12 @@ router.post('/franqueado/clientes/list/agenda', async (req, res) => {
   const targetId = isAdmin ? (isFilterAll ? null : req.body.id) : req.user.id;
   const whereCondition = targetId ? { id_franqueado: targetId } : {};
 
-  if (req.body.subpainel && req.query.subList !== "null") {
+  const isSubpainel = (
+    req.body.isSubPainelConsulta === true || 
+    (Boolean(req.body.subpainel) && req.query.subList && req.query.subList !== "null" && req.query.subList !== "undefined" && req.query.subList !== "")
+  );
+
+  if (isSubpainel) {
     const nmClientes = await SubClientes.findAll({
       attributes: SUBCLIENT_SAFE_ATTRIBUTES,
       where: whereCondition
@@ -2010,7 +2015,12 @@ router.post('/franqueado/clientes/list', async (req, res) => {
   const targetId = isAdmin ? (isFilterAll ? null : req.body.id) : req.user.id;
   const whereCondition = targetId ? { id_franqueado: targetId } : {};
 
-  if (req.body.subpainel && req.query.subList !== "null") {
+  const isSubpainel = (
+    req.body.isSubPainelConsulta === true || 
+    (Boolean(req.body.subpainel) && req.query.subList && req.query.subList !== "null" && req.query.subList !== "undefined" && req.query.subList !== "")
+  );
+
+  if (isSubpainel) {
     const nmClientes = await SubClientes.findAll({
       attributes: SUBCLIENT_SAFE_ATTRIBUTES,
       where: whereCondition
