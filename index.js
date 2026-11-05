@@ -26,24 +26,61 @@ const defaultOrigins = [
   'http://localhost:3035',
   'https://parceiro.painelw.com.br',
   'https://oimed.com.br',
-  'https://api.oimed.com.br'
+  'https://www.oimed.com.br',
+  'https://api.oimed.com.br',
+  'https://apioimed.z4you.com.br',
+  'https://atendimentos.consultaonline.app.br',
+  'https://atendimento.consultaonline.app.br',
+  'https://consultaonline.app.br'
 ];
+
 const envOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
-  : defaultOrigins;
+  : [];
 
-app.use(cors({
+// Padrões de domínio autorizados (subdomínios de consultaonline, oimed, painelw, z4you e localhost)
+const allowedOriginPatterns = [
+  /^https?:\/\/(?:[a-zA-Z0-9-]+\.)*consultaonline\.app\.br(?::\d+)?$/,
+  /^https?:\/\/(?:[a-zA-Z0-9-]+\.)*oimed\.com\.br(?::\d+)?$/,
+  /^https?:\/\/(?:[a-zA-Z0-9-]+\.)*painelw\.com\.br(?::\d+)?$/,
+  /^https?:\/\/(?:[a-zA-Z0-9-]+\.)*z4you\.com\.br(?::\d+)?$/,
+  /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/
+];
+
+function isOriginAllowed(origin) {
+  if (!origin) return true; // Permite requisições sem origin (mobile apps, curl, server-to-server)
+  if (defaultOrigins.includes(origin) || envOrigins.includes(origin)) return true;
+  return allowedOriginPatterns.some(pattern => pattern.test(origin));
+}
+
+const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (envOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+    if (isOriginAllowed(origin) || process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
-    return callback(new Error('Origem não permitida pela política CORS.'));
+    // Não lança Error para evitar que o Express responda com 500 sem os cabeçalhos de CORS
+    return callback(null, false);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'clientId', 'token', 'doc', 'key']
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'x-access-token',
+    'clientId',
+    'token',
+    'doc',
+    'key',
+    'Accept',
+    'Origin',
+    'X-Requested-With'
+  ],
+  exposedHeaders: ['Authorization', 'x-access-token'],
+  maxAge: 86400 // Cache de preflight por 24h no navegador
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Segurança: Rate Limiting
 const apiLimiter = rateLimit({
