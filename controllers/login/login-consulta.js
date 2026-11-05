@@ -70,6 +70,31 @@ function formatState(state) {
     return st.substr(st.length - 2).toUpperCase();
 }
 
+function formatPhoneRapidoc(phone, fallbackPhone) {
+    const clean = (val) => {
+        if (!val) return '';
+        let digits = String(val).replace(/\D/g, '');
+        if (digits.startsWith('55') && digits.length > 11) {
+            digits = digits.slice(2);
+        }
+        return digits;
+    };
+
+    let num = clean(phone);
+    if (!num || /^0+$/.test(num) || num.length < 10) {
+        num = clean(fallbackPhone);
+    }
+    if (!num || /^0+$/.test(num)) {
+        return '11999999999';
+    }
+    if (num.length === 10) {
+        num = num.slice(0, 2) + '9' + num.slice(2);
+    } else if (num.length > 11) {
+        num = num.slice(-11);
+    }
+    return num.length === 11 ? num : '11999999999';
+}
+
 /**
  * Consulta beneficiário na Rapidoc pelo CPF
  */
@@ -151,7 +176,7 @@ async function ativarCompletoRapidoc(cliente) {
             "name": cliente.nm_cliente,
             "cpf": cpf,
             "birthday": birthdayFormat,
-            "phone": String(cliente.telefone || '').replace(/\D/g, ''),
+            "phone": formatPhoneRapidoc(cliente.telefone, ''),
             "email": cliente.email || `${cpf}@oimed.com.br`,
             "zipCode": String(cliente.zip_code || '').replace(/\D/g, ''),
             "address": cliente.address || "Rua Principal, 100",
@@ -191,7 +216,7 @@ async function ativarCompletoRapidoc(cliente) {
                     "name": dep[`nm_cliente${i}`],
                     "cpf": String(dep[`nu_documento${i}`]).replace(/\D/g, ''),
                     "birthday": formatBirthday(dep[`birthday${i}`]),
-                    "phone": String(dep[`telefone${i}`] || cliente.telefone || '').replace(/\D/g, ''),
+                    "phone": formatPhoneRapidoc(dep[`telefone${i}`], cliente.telefone),
                     "email": dep[`email${i}`] || cliente.email || `${cpf}@oimed.com.br`,
                     "zipCode": String(dep[`zipCode${i}`] || cliente.zip_code || '').replace(/\D/g, ''),
                     "address": dep[`address${i}`] || cliente.address || "Rua Principal, 100",

@@ -2749,6 +2749,31 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
     return s;
   }
 
+  function formatPhoneRapidoc(phone, fallbackPhone) {
+    const clean = (val) => {
+      if (!val) return '';
+      let digits = String(val).replace(/\D/g, '');
+      if (digits.startsWith('55') && digits.length > 11) {
+        digits = digits.slice(2);
+      }
+      return digits;
+    };
+
+    let num = clean(phone);
+    if (!num || /^0+$/.test(num) || num.length < 10) {
+      num = clean(fallbackPhone);
+    }
+    if (!num || /^0+$/.test(num)) {
+      return '11999999999';
+    }
+    if (num.length === 10) {
+      num = num.slice(0, 2) + '9' + num.slice(2);
+    } else if (num.length > 11) {
+      num = num.slice(-11);
+    }
+    return num.length === 11 ? num : '11999999999';
+  }
+
   // Se veio payload completo no body (ex: formulário manual indie)
   if (req.body && req.body.name && req.body.cpf) {
     const birthdayFormat = formatBirthday(req.body.birthday);
@@ -2758,7 +2783,7 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
         "name": req.body.name,
         "cpf": String(req.body.cpf).replace(/\D/g, ''),
         "birthday": birthdayFormat,
-        "phone": String(req.body.phone || '').replace(/\D/g, ''),
+        "phone": formatPhoneRapidoc(req.body.phone, ''),
         "email": req.body.email,
         "zipCode": String(req.body.zipCode || '').replace(/\D/g, ''),
         "address": req.body.address || "Rua Principal, 100",
@@ -2815,7 +2840,7 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
       "name": cliente[0].nm_cliente,
       "cpf": cleanCpf,
       "birthday": birthdayFormat,
-      "phone": String(cliente[0].telefone || '').replace(/\D/g, ''),
+      "phone": formatPhoneRapidoc(cliente[0].telefone, ''),
       "email": cliente[0].email,
       "zipCode": String(cliente[0].zip_code || '').replace(/\D/g, ''),
       "address": cliente[0].address || "Rua Principal, 100",
@@ -2847,7 +2872,7 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
         "name": dataArr[0].nm_cliente1,
         "cpf": String(dataArr[0].nu_documento1).replace(/\D/g, ''),
         "birthday": formatBirthday(dataArr[0].birthday1),
-        "phone": String(dataArr[0].telefone1 || cliente[0].telefone || '').replace(/\D/g, ''),
+        "phone": formatPhoneRapidoc(dataArr[0].telefone1, cliente[0].telefone),
         "email": dataArr[0].email1 || cliente[0].email,
         "zipCode": String(dataArr[0].zipCode1 || cliente[0].zip_code || '').replace(/\D/g, ''),
         "address": dataArr[0].address1 || cliente[0].address || "Rua Principal, 100",
@@ -2866,7 +2891,7 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
         "name": dataArr[1].nm_cliente2,
         "cpf": String(dataArr[1].nu_documento2).replace(/\D/g, ''),
         "birthday": formatBirthday(dataArr[1].birthday2),
-        "phone": String(dataArr[1].telefone2 || cliente[0].telefone || '').replace(/\D/g, ''),
+        "phone": formatPhoneRapidoc(dataArr[1].telefone2, cliente[0].telefone),
         "email": dataArr[1].email2 || cliente[0].email,
         "zipCode": String(dataArr[1].zipCode2 || cliente[0].zip_code || '').replace(/\D/g, ''),
         "address": dataArr[1].address2 || cliente[0].address || "Rua Principal, 100",
@@ -2885,7 +2910,7 @@ router.post('/beneficiaries/create/:cpf', async (req, res) => {
         "name": dataArr[2].nm_cliente3,
         "cpf": String(dataArr[2].nu_documento3).replace(/\D/g, ''),
         "birthday": formatBirthday(dataArr[2].birthday3),
-        "phone": String(dataArr[2].telefone3 || cliente[0].telefone || '').replace(/\D/g, ''),
+        "phone": formatPhoneRapidoc(dataArr[2].telefone3, cliente[0].telefone),
         "email": dataArr[2].email3 || cliente[0].email,
         "zipCode": String(dataArr[2].zipCode3 || cliente[0].zip_code || '').replace(/\D/g, ''),
         "address": dataArr[2].address3 || cliente[0].address || "Rua Principal, 100",
