@@ -17,89 +17,148 @@ module.exports = {
     loginConsulta: async (req, res) => {
         try {
             console.log("chamar control", req.body);
-            console.log("verificando....:", req.body == 1);
+            if (!req.body || !req.body.nuCpf || !req.body.password) {
+                return res.status(200).json({ success: false, message: "CPF e senha são obrigatórios." });
+            }
+
+            const rawCpf = String(req.body.nuCpf).trim();
+            const cleanCpf = rawCpf.replace(/\D/g, '');
 
             let cliente = await Clientes.findOne({
-                where: { nu_documento: req.body.nuCpf },
+                where: { nu_documento: cleanCpf },
                 raw: true
             });
+
+            if (!cliente && cleanCpf !== rawCpf) {
+                cliente = await Clientes.findOne({
+                    where: { nu_documento: rawCpf },
+                    raw: true
+                });
+            }
 
             let isSubCliente = false;
 
             if (!cliente) {
                 cliente = await SubClientes.findOne({
-                    where: { nu_documento: req.body.nuCpf },
+                    where: { nu_documento: cleanCpf },
                     raw: true
                 });
+
+                if (!cliente && cleanCpf !== rawCpf) {
+                    cliente = await SubClientes.findOne({
+                        where: { nu_documento: rawCpf },
+                        raw: true
+                    });
+                }
 
                 if (cliente) {
                     isSubCliente = true;
                 }
             }
 
+            if (!cliente) {
+                return res.status(200).json({ success: false, message: "Cliente não encontrado." });
+            }
 
+            const cpf = cliente.nu_documento;
+            const cpfClean = String(cpf).replace(/\D/g, '');
+            const senhaValida1 = cpfClean.slice(0, 4);
+            const senhaValida2 = String(cpf).slice(0, 4);
+            const senhaInput = String(req.body.password).trim();
 
-            if (cliente) {
-                const cpf = cliente.nu_documento;
-                const senha = cliente.nu_documento.slice(0, 4);
-                console.log("cliente encontrado: ", cpf, senha, req.body.nuCpf, req.body.password);
+            if (senhaInput !== senhaValida1 && senhaInput !== senhaValida2) {
+                return res.status(200).json({ success: false, message: "CPF ou Senha incorreto." });
+            }
 
-                if (req.body.nuCpf == cpf && req.body.password == senha) {
-                    if (isSubCliente) {
-                        try {
-                            console.log("Ativando subcliente na base antes do login:", cpf);
-                            await ativarBeneficiarioSubpainel(cpf);
-                        } catch (errAtivacao) {
-                            console.log("Erro ao ativar subcliente na base antes do login:", errAtivacao);
-                        }
+            if (cliente.situacao && (cliente.situacao.toLowerCase() === 'inativo' || cliente.situacao.toLowerCase() === 'cancelado')) {
+                return res.status(200).json({ 
+                    success: false, 
+                    message: "Seu cadastro encontra-se inativo. Entre em contato com o suporte." 
+                });
+            }
+
+            if (isSubCliente) {
+                try {
+                    console.log("Ativando subcliente na base antes do login:", cpf);
+                    await ativarBeneficiarioSubpainel(cpf);
+                } catch (errAtivacao) {
+                    console.log("Erro ao ativar subcliente na base antes do login:", errAtivacao);
+                }
+            }
+
+            const isSleeping = await Sleeping.findOne({
+                where: { idVida: cpf },
+                raw: true
+            });
+
+            if (isSleeping) {
+                console.log("Cliente está dormindo:2", cpf);
+                try {
+                    const isWakeUp = await wakeUp(isSleeping.uuid);
+                    if (isWakeUp) {
+                        return res.status(200).json({ 
+                            success: true, 
+                            message: "Operação realizada com sucesso!", 
+                            urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${isSleeping.uuid}` 
+                        });
                     }
-
-                    const isSleeping = await Sleeping.findOne({
-                        where: { idVida: cpf },
-                        raw: true
-                    });
-
-                    if (isSleeping) {
-                        console.log("Cliente está dormindo:2", cpf);
-
-                        const isWakeUp = await wakeUp(isSleeping.uuid);
-
-                        if (isWakeUp) {
-                            res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${isSleeping.uuid}` });
-                        }
-
-                    } else {//00057163731
-                        console.log("Cliente não está dormindo:", cpf);
-                        if (cliente.uuid) {
-                            res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${cliente.uuid}` });
-
-                        } else {
-                            const getCliente = await buscarClienteService(cpf);
-
-                            if (!isSubCliente) {
-                                await Clientes.update(
-                                    { uuid: getCliente.beneficiary.uuid },
-                                    { where: { nu_documento: cpf } }
-                                );
-                            }
-
-                            res.status(200).json({ success: true, message: "Operação realizada com sucesso!", urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${getCliente.beneficiary.uuid}` });
-
-                        }
-
-                    }
-                } else {
-                    res.status(200).json({ success: false, message: "CPF ou Senha incorreto" })
+                } catch (errWake) {
+                    console.log("Erro ao acordar cliente:", errWake);
                 }
 
+                if (isSleeping.uuid) {
+                    return res.status(200).json({ 
+                        success: true, 
+                        message: "Operação realizada com sucesso!", 
+                        urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${isSleeping.uuid}` 
+                    });
+                }
+            }
 
-            } else {
-                res.status(200).json({ success: false, message: "cliente não encontrado" })
+            // Cliente ativo com UUID preenchido
+            if (cliente.uuid && typeof cliente.uuid === 'string' && cliente.uuid.trim() !== '') {
+                return res.status(200).json({ 
+                    success: true, 
+                    message: "Operação realizada com sucesso!", 
+                    urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${cliente.uuid.trim()}` 
+                });
+            }
+
+            // Caso não tenha UUID gravado, tenta buscar na base de telemedicina
+            try {
+                const getCliente = await buscarClienteService(cpfClean || cpf);
+                const beneficiaryUuid = getCliente?.beneficiary?.uuid;
+
+                if (beneficiaryUuid) {
+                    if (!isSubCliente) {
+                        await Clientes.update(
+                            { uuid: beneficiaryUuid },
+                            { where: { nu_documento: cpf } }
+                        );
+                    }
+
+                    return res.status(200).json({ 
+                        success: true, 
+                        message: "Operação realizada com sucesso!", 
+                        urlRedirect: `https://atendimento.consultaonline.app.br/${process.env.CLIENT_ID}/beneficiary/${beneficiaryUuid}` 
+                    });
+                } else {
+                    return res.status(200).json({ 
+                        success: false, 
+                        message: "Cadastro do beneficiário não localizado na base de consultas. Entre em contato com a administração." 
+                    });
+                }
+            } catch (errBusca) {
+                console.log("Erro ao buscar cliente na base mestra:", errBusca?.message || errBusca);
+                return res.status(200).json({ 
+                    success: false, 
+                    message: "Cadastro ainda não ativado na base de consultas. Entre em contato com o suporte." 
+                });
             }
 
         } catch (error) {
-            console.log("erro: ", error);
-            res.status(500).json({ success: false, message: "Ocorreu um erro ao processar a solicitação.", error: error.message });
+            console.log("erro geral no loginConsulta: ", error);
+            return res.status(500).json({ success: false, message: "Ocorreu um erro ao processar a solicitação.", error: error.message });
         }
 
         //buscar dados pelo cpf na tabela de clientes

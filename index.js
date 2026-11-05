@@ -16,7 +16,9 @@ const port = process.env.PORT || 3035;
 // Segurança: Headers HTTP de proteção via Helmet
 app.use(helmet({
   contentSecurityPolicy: false, // Mantém compatibilidade com formulários externos e embeds
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: false
 }));
 
 // Segurança: Configuração de CORS com origens autorizadas
